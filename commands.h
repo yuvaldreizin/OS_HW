@@ -5,10 +5,12 @@
 =============================================================================*/
 #include <stdlib.h>
 #include <stdio.h>
+#include "jobs.h"
 
 #define CMD_LENGTH_MAX 120
 #define ARGS_NUM_MAX 20
 #define JOBS_NUM_MAX 100
+
 
 /*=============================================================================
 * error handling - some useful macros and examples of error handling,

@@ -7,7 +7,7 @@
 
 #include "commands.h"
 #include "signals.h"
-
+#include "jobs.h"
 /*=============================================================================
 * classes/structs declarations
 =============================================================================*/
@@ -27,11 +27,16 @@ int main(int argc, char* argv[])
 		printf("smash > ");
 		fgets(_line, CMD_LENGTH_MAX, stdin);
 		strcpy(_cmd, _line);
-		//execute command
+
+		//AMIR thats what i think needs to be the flow -
+		//check for finished jobs
+		//parse cmd
+		//check for status and execute / fork and add to jobList
 
 		//initialize buffers for next command
 		_line[0] = '\0';
 		_cmd[0] = '\0';
+
 	}
 
 	return 0;
