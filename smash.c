@@ -30,8 +30,8 @@ int main(int argc, char* argv[])
 
 		//AMIR thats what i think needs to be the flow -
 		//check for finished jobs
-		//parse cmd
-		//check for status and execute / fork and add to jobList
+		//parse cmd - create a cmd struct with command, args and status (in/external + background)?
+		//check for status and execute (execv + args) / fork and add to jobList
 
 		//initialize buffers for next command
 		_line[0] = '\0';

@@ -26,7 +26,7 @@ typedef enum {
  */
 struct job {
     unsigned int ID;         /**< Unique identifier for the job. */
-    char* cmd;               /**< Command associated with the job. */
+    struct cmd *cmd;         /**< Command associated with the job. */
     jobStatus status;        /**< Current status of the job. */
     time_t creationTime;     /**< Time when the job was created. */
     unsigned int pid;        /**< Process ID of the job. */
