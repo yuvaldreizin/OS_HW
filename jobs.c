@@ -5,7 +5,7 @@ job_t initJob(int ID, char* cmd, jobStatus status){
     job_t job = MALLOC_VALIDATED(struct job, sizeof(struct job));
     job->cmd = MALLOC_VALIDATED(char, strlen(cmd) + 1);
     strcpy(job->cmd, cmd);
-    job->ID = ID;
+    job->ID = ID;               // YUVAL - why not do it automatically using nextID?
     job->status = status;
     job->creationTime = time(NULL);
     return job;
