@@ -13,3 +13,12 @@
     added 1 ASSUMPTION about max path length.
     getppid causes compilation error, not yet fixed.
     missing more commands and error handling - will do it in the weekend.
+
+
+- Yuval's commit 25.04
+    added support for your requests in jobs module.
+    added signal module - 
+        * handlers for Ctrl C/Z
+        * sendSignal function
+    reffered to the global variables - edited functions to fit.
+    added utils.h to avoid include loop.

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include "jobs.h"
 #include <unistd.h>
+#include "utils.h"
 
 #define CMD_LENGTH_MAX 120
 #define ARGS_NUM_MAX 20
@@ -43,28 +44,6 @@ typedef struct internal_command {
 
 
 
-/*=============================================================================
-* error handling - some useful macros and examples of error handling,
-* feel free to not use any of this
-=============================================================================*/
-#define ERROR_EXIT(msg) \
-    do { \
-        fprintf(stderr, "%s: %d\n%s", __FILE__, __LINE__, msg); \
-        exit(1); \
-    } while(0);
-
-static inline void* _validatedMalloc(size_t size)
-{
-    void* ptr = malloc(size);
-    if(!ptr) ERROR_EXIT("malloc");
-    return ptr;
-}
-
-// example usage:
-// char* bufffer = MALLOC_VALIDATED(char, MAX_LINE_SIZE);
-// which automatically includes error handling
-#define MALLOC_VALIDATED(type, size) \
-    ((type*)_validatedMalloc((size)))
 
 
 int args_num_error(cmd *cmd, int expected_num);
@@ -100,7 +79,7 @@ int showpid(cmd *cmd);
 int pwd(cmd *cmd);
 int cd(cmd *cmd);
 int jobs(cmd *cmd);
-int kill(cmd *cmd);
+int smashKill(cmd *cmd);
 int fg(cmd *cmd);
 int bg(cmd *cmd);
 int quit(cmd *cmd);
@@ -112,7 +91,7 @@ internal_command internal_command_t[] = {
     {"pwd", pwd},
     {"cd", cd},
     {"jobs", jobs},
-    {"kill", kill},
+    {"kill", smashKill},
     {"fg", fg},
     {"bg", bg},
     {"quit", quit},

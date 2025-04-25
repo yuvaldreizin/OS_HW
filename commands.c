@@ -162,7 +162,7 @@ int jobs(cmd *cmd){
 	return VALID_COMMAND;
 }
 
-int kill(cmd *cmd){
+int smashKill(cmd *cmd){
 	if (cmd->nargs != 3 || /* ||*/ ((int)(cmd->args[1]) > 0 && (int)(cmd->args[1]) < _NSIG)){ // TODO - fix casting
 		perrorSmash(cmd->command, "invalid arguments");
 		return INVALID_COMMAND;
