@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include "jobs.h"
 #include <unistd.h>
+#include "utils.h"
 
 #define CMD_LENGTH_MAX 120
 #define ARGS_NUM_MAX 20
@@ -43,28 +44,6 @@ typedef struct internal_command {
 
 #define MAX_PATH_SIZE 200   // ASSUMPTION - is there a max path size? PWD seems the best way to get pwd but requires a buffer size.
 
-/*=============================================================================
-* error handling - some useful macros and examples of error handling,
-* feel free to not use any of this
-=============================================================================*/
-#define ERROR_EXIT(msg) \
-    do { \
-        fprintf(stderr, "%s: %d\n%s", __FILE__, __LINE__, msg); \
-        exit(1); \
-    } while(0);
-
-static inline void* _validatedMalloc(size_t size)
-{
-    void* ptr = malloc(size);
-    if(!ptr) ERROR_EXIT("malloc");
-    return ptr;
-}
-
-// example usage:
-// char* bufffer = MALLOC_VALIDATED(char, MAX_LINE_SIZE);
-// which automatically includes error handling
-#define MALLOC_VALIDATED(type, size) \
-    ((type*)_validatedMalloc((size)))
 
 
 /*=============================================================================

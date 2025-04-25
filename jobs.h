@@ -7,7 +7,8 @@
 #include <time.h>
 #include <string.h>
 #include <sys/wait.h>
-#include "commands.h"
+#include "utils.h"
+
 #define JOBS_NUM_MAX 100
 
 /**
@@ -25,8 +26,8 @@ typedef enum {
  * @brief Represents a single job.
  */
 struct job {
-    unsigned int ID;         /**< Unique identifier for the job. */
-    struct cmd *cmd;         /**< Command associated with the job. */
+    unsigned int ID;         /**< Unique SMASH identifier for the job. */
+    char *cmd;               /**< Command associated with the job. */
     jobStatus status;        /**< Current status of the job. */
     time_t creationTime;     /**< Time when the job was created. */
     unsigned int pid;        /**< Process ID of the job. */
@@ -49,6 +50,8 @@ typedef struct jobList* jobList_t;
 /*=============================================================================
 * global functions
 =============================================================================*/
+
+/*======================== Job Commands ========================*/
 
 /**
  * @brief Initializes a new job.
@@ -82,6 +85,8 @@ jobStatus getStatus(job_t job);
  * @param new The new status to set.
  */
 void chnageStatus(job_t job, jobStatus new);
+
+/*======================== Job List Commands ========================*/
 
 /**
  * @brief Initializes a new job list.
@@ -127,5 +132,14 @@ void removeFinishedJobs(jobList_t jobList);
  * @param jobList The job list to print.
  */
 void printJobList(jobList_t jobList);
+
+/**
+ * @brief Find a job by its ID.
+ * 
+ * @param jobList The job list from which the job will be looked up.
+ * @param ID Job ID to search for.
+ * @return Pointer to struct job if found, NULL if job doesn't exist.
+ */
+job_t jobLookup(jobList_t jobList, unsigned int ID);
 
 #endif //__JOBS_H__

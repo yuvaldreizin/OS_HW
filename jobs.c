@@ -68,15 +68,24 @@ void removeJob(jobList_t jobList, unsigned int ID){
     }
 }
 
-void removeFinishedJobs(jobList_t jobList){ //AMIR a fo=unction that removes finished jobs from the job list. need to activate it before any commant 
+jobStatus getStatus(job_t job){
+    return job->status;
+}
+
+void chnageStatus(job_t job, jobStatus new){
+    job->status = new;
+}
+
+void removeFinishedJobs(jobList_t jobList){ //AMIR a function that removes finished jobs from the job list. need to activate it before any commant 
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
         if (jobList->jobs[i] && jobList->jobs[i]->status == BACKGROUND){
             int status;
             pid_t result = waitpid(jobList->jobs[i]->pid, &status, WNOHANG); //WHOHANG flag to avoid blocking
             if (result == -1) // error occurred
                 perror("waitpid failed");
-            if (result > 0) // job finished
+            else if (result > 0) // job finished
                 removeJob(jobList, i);
+            //else - job still running, do nothing
         }
     }
 }
@@ -89,4 +98,11 @@ void printJobList(jobList_t jobList){
             printf("[%d] %s: %d %d secs%s\n", curr_job->ID, curr_job->cmd, curr_job->pid, time_elapsed_sec,(curr_job->status == STOPPED)? " stopped" : ""); //ASSUMPTION - if job isn't stopped we dont print the space after "secs"
         }
     }
+}
+
+job_t jobLookup(jobList_t jobList, unsigned int ID){
+    if (ID < JOBS_NUM_MAX) {
+        return jobList->jobs[ID];
+    }
+    return NULL;
 }
