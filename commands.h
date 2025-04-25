@@ -79,7 +79,7 @@ int showpid(cmd *cmd);
 int pwd(cmd *cmd);
 int cd(cmd *cmd);
 int jobs(cmd *cmd);
-int kill(cmd *cmd);
+int smashKill(cmd *cmd);
 int fg(cmd *cmd);
 int bg(cmd *cmd);
 int quit(cmd *cmd);
@@ -91,7 +91,7 @@ internal_command internal_command_t[] = {
     {"pwd", pwd},
     {"cd", cd},
     {"jobs", jobs},
-    {"kill", kill},
+    {"kill", smashKill},
     {"fg", fg},
     {"bg", bg},
     {"quit", quit},

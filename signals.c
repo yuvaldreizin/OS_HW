@@ -55,7 +55,8 @@ void setupSignalHandlers() {
     }
 }
 
-void sendSignal(int sig, unsigned int receiverJobID, jobList_t jobList) {
+void sendSignal(int sig, unsigned int receiverJobID) {
+    jobList_t jobList = globals->jobList;
     job_t job = jobLookup(jobList, receiverJobID);
     if (job == NULL) {
         fprintf(stderr, "Job with ID %d not found\n", receiverJobID);

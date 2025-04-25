@@ -59,9 +59,10 @@ typedef struct jobList* jobList_t;
  * @param ID The unique identifier for the job.
  * @param cmd The command associated with the job.
  * @param status The initial status of the job.
+ * @param pid The process ID of the job.
  * @return A pointer to the initialized job.
  */
-job_t initJob(int ID, char* cmd, jobStatus status);
+job_t initJob(int ID, char* cmd, jobStatus status, pid_t pid);
 
 /**
  * @brief Destroys a job and frees its resources.
@@ -97,49 +98,41 @@ jobList_t initJobList();
 
 /**
  * @brief Destroys a job list and frees its resources.
- * 
- * @param jobList The job list to destroy.
  */
-void destroyJobList(jobList_t jobList);
+void destroyJobList();
 
 /**
  * @brief Adds a new job to the job list.
  * 
- * @param jobList The job list to which the job will be added.
  * @param name The name/command of the job.
  * @param status The initial status of the job.
+ * @param pid The process ID of the job.
  */
-void addJob(jobList_t jobList, char* name, jobStatus status);
+void addJob(char* name, jobStatus status, pid_t pid);
 
 /**
  * @brief Removes a job from the job list by its ID.
  * 
- * @param jobList The job list from which the job will be removed.
  * @param ID The ID of the job to remove.
  */
-void removeJob(jobList_t jobList, unsigned int ID);
+void removeJob(unsigned int ID);
 
 /**
  * @brief Removes all finished jobs from the job list.
- * 
- * @param jobList The job list to clean up.
  */
-void removeFinishedJobs(jobList_t jobList);
+void removeFinishedJobs();
 
 /**
  * @brief Prints the list of jobs.
- * 
- * @param jobList The job list to print.
  */
-void printJobList(jobList_t jobList);
+void printJobList();
 
 /**
  * @brief Find a job by its ID.
  * 
- * @param jobList The job list from which the job will be looked up.
  * @param ID Job ID to search for.
  * @return Pointer to struct job if found, NULL if job doesn't exist.
  */
-job_t jobLookup(jobList_t jobList, unsigned int ID);
+job_t jobLookup(unsigned int ID);
 
 #endif //__JOBS_H__

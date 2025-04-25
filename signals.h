@@ -29,5 +29,5 @@ void handleSIGTSTP(int sig);
  */
 void setupSignalHandlers();
 
-void sendSignal(int sig, unsigned int recieverJobID, jobList_t jobList);
+void sendSignal(int sig, unsigned int recieverJobID);
 #endif //__SIGNALS_H__

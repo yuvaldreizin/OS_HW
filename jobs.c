@@ -1,16 +1,15 @@
 // jobs.c
 #include "jobs.h"
 
-job_t initJob(int ID, char* cmd, jobStatus status){
+job_t initJob(int ID, char* cmd, jobStatus status, pid_t pid){
     job_t job = MALLOC_VALIDATED(struct job, sizeof(struct job));
     job->cmd = MALLOC_VALIDATED(char, strlen(cmd) + 1);
     strcpy(job->cmd, cmd);
-    job->ID = ID;               // YUVAL - why not do it automatically using nextID?
+    job->ID = ID;
     job->status = status;
     job->creationTime = time(NULL);
+    job->pid = pid;
     return job;
-    //AMIR need to add job's PID for a check if the job is finished or not. I think that the proper place is smash.c (where the fork happens)
-    //maybe gedpid()?
 }
 
 void destroyJob(job_t job){
@@ -34,7 +33,8 @@ jobList_t initJobList(){
     return jobList;
 }
 
-void destroyJobList(jobList_t jobList) {
+void destroyJobList() {
+    jobList_t jobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX && jobList->count ; i++) {
         if (jobList->jobs[i]) {
             destroyJob(jobList->jobs[i]);
@@ -44,7 +44,8 @@ void destroyJobList(jobList_t jobList) {
     free(jobList);
 }
 
-void addJob(jobList_t jobList, char* name, jobStatus status){
+void addJob(char* name, jobStatus status, pid_t pid){
+    jobList_t jobList = globals->jobList;
     if (jobList->count == JOBS_NUM_MAX) {
         fprintf(stderr, "Job list is full\n");
         return;
@@ -59,7 +60,8 @@ void addJob(jobList_t jobList, char* name, jobStatus status){
     }
 }
 
-void removeJob(jobList_t jobList, unsigned int ID){
+void removeJob(unsigned int ID){
+    jobList_t jobList = globals->jobList;
     destroyJob(jobList->jobs[ID]);
     jobList->jobs[ID] = NULL;
     jobList->count--;
@@ -76,7 +78,8 @@ void chnageStatus(job_t job, jobStatus new){
     job->status = new;
 }
 
-void removeFinishedJobs(jobList_t jobList){ //AMIR a function that removes finished jobs from the job list. need to activate it before any commant 
+void removeFinishedJobs(){ //AMIR a function that removes finished jobs from the job list. need to activate it before any commant 
+    jobList_t jobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
         if (jobList->jobs[i] && jobList->jobs[i]->status == BACKGROUND){
             int status;
@@ -90,7 +93,8 @@ void removeFinishedJobs(jobList_t jobList){ //AMIR a function that removes finis
     }
 }
 
-void printJobList(jobList_t jobList){
+void printJobList(){
+    jobList_t jobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
         if (jobList->jobs[i]) {
             job_t curr_job = jobList->jobs[i];
@@ -100,7 +104,8 @@ void printJobList(jobList_t jobList){
     }
 }
 
-job_t jobLookup(jobList_t jobList, unsigned int ID){
+job_t jobLookup(unsigned int ID){
+    jobList_t jobList = globals->jobList;
     if (ID < JOBS_NUM_MAX) {
         return jobList->jobs[ID];
     }
