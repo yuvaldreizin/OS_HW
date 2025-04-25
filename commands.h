@@ -41,7 +41,7 @@ typedef struct internal_command {
     cmd_func func;             /**< Function pointer to the command's implementation. */
 } internal_command;
 
-#define MAX_PATH_SIZE 200   // ASSUMPTION - is there a max path size? PWD seems the best way to get pwd but requires a buffer size.
+
 
 /*=============================================================================
 * error handling - some useful macros and examples of error handling,
@@ -67,12 +67,14 @@ static inline void* _validatedMalloc(size_t size)
     ((type*)_validatedMalloc((size)))
 
 
+int args_num_error(cmd *cmd, int expected_num);
+
 /*=============================================================================
 * error definitions
 =============================================================================*/
 typedef enum  {
 	INVALID_COMMAND = 0,
-    VALID_COMMAND = 1
+    VALID_COMMAND
 } ParsingError;
 
 typedef enum {
@@ -82,26 +84,27 @@ typedef enum {
 	//feel free to add more values here or delete this
 } CommandResult;
 
+
 /*=============================================================================
 * global functions
 =============================================================================*/
-int parseCmd(char* line, struct cmd *command);
+int parseCmd(char* line, cmd *command);
 
-void destroyCmd(struct cmd* cmd);
+void destroyCmd(cmd *cmd);
 
-int isInternalCommand(struct cmd* cmd);
+int isInternalCommand(cmd *cmd);
 
-int run_cmd(struct cmd* cmd);
+int run_cmd(cmd *cmd);
 
-int showpid(struct cmd* cmd);
-int pwd(struct cmd* cmd);
-int cd(struct cmd* cmd);
-int jobs(struct cmd* cmd);
-int kill(struct cmd* cmd);
-int fg(struct cmd* cmd);
-int bg(struct cmd* cmd);
-int quit(struct cmd* cmd);
-int diff(struct cmd* cmd);
+int showpid(cmd *cmd);
+int pwd(cmd *cmd);
+int cd(cmd *cmd);
+int jobs(cmd *cmd);
+int kill(cmd *cmd);
+int fg(cmd *cmd);
+int bg(cmd *cmd);
+int quit(cmd *cmd);
+int diff(cmd *cmd);
 
 
 internal_command internal_command_t[] = {
@@ -117,5 +120,7 @@ internal_command internal_command_t[] = {
 };
 
 #define NUM_INTERNAL_COMMANDS (sizeof(internal_command_t) / sizeof(struct internal_command))
+
+int run_ext_cmd(cmd *cmd);
 
 #endif //COMMANDS_H
