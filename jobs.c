@@ -44,15 +44,30 @@ void destroyJobList() {
     free(jobList);
 }
 
-void addJob(char* name, jobStatus status, pid_t pid){
+void addNewJob(char* name, jobStatus status, pid_t pid){
     jobList_t jobList = globals->jobList;
     if (jobList->count == JOBS_NUM_MAX) {
         fprintf(stderr, "Job list is full\n");
         return;
     }
     unsigned int ID = jobList->nextID;
-    job_t new_job = initJob(ID, name, status);
+    job_t new_job = initJob(ID, name, status, pid);
     jobList->jobs[ID] = new_job;
+    if(++jobList->count != JOBS_NUM_MAX) {
+        while (jobList->jobs[ID])
+            ID++;
+        jobList->nextID = ID;
+    }
+}
+
+void addExistingJob(job_t job){
+    jobList_t jobList = globals->jobList;
+    if (jobList->count == JOBS_NUM_MAX) {
+        fprintf(stderr, "Job list is full\n");
+        return;
+    }
+    unsigned int ID = jobList->nextID;
+    jobList->jobs[ID] = job;
     if(++jobList->count != JOBS_NUM_MAX) {
         while (jobList->jobs[ID])
             ID++;
@@ -74,7 +89,7 @@ jobStatus getStatus(job_t job){
     return job->status;
 }
 
-void chnageStatus(job_t job, jobStatus new){
+void changeStatus(job_t job, jobStatus new){
     job->status = new;
 }
 
@@ -87,7 +102,7 @@ void removeFinishedJobs(){ //AMIR a function that removes finished jobs from the
             if (result == -1) // error occurred
                 perror("waitpid failed");
             else if (result > 0) // job finished
-                removeJob(jobList, i);
+                removeJob(i);
             //else - job still running, do nothing
         }
     }

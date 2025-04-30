@@ -2,9 +2,17 @@
 #define SIGNALS_H
 
 #include <signal.h>
+#include "jobs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <setjmp.h>
+#include <unistd.h>
+
+/*=============================================================================
+* global variables
+=============================================================================*/
+
+jmp_buf env; // global variable to store the environment for longjmp
 
 /*=============================================================================
 * global functions

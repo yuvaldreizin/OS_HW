@@ -16,12 +16,6 @@
 * global variables & data structures
 =============================================================================*/
 char _line[CMD_LENGTH_MAX];
-typdef struct globals {
-	jobList_t jobList;
-	char* last_path;
-} globals_t;
-globals_t globals = {NULL, NULL};
-jmp_buf env; // global variable to store the environment for longjmp
 
 /*=============================================================================
 * main function
