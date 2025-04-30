@@ -22,3 +22,8 @@
         * sendSignal function
     reffered to the global variables - edited functions to fit.
     added utils.h to avoid include loop.
+
+- Yuval's commit 30.04
+    fixed compilation bugs.
+    reorganized structs for compilation.
+    added smash_status and fgJobt in globals for signal handling.

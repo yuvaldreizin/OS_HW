@@ -1,35 +1,37 @@
 // signals.c
 #include "signals.h"
 
-jmp_buf env; // global variable to store the environment for longjmp
-
 void handleSIGINT(int sig) {
     // catch SIGINT (Ctrl+C) signal
     printf("\nCaught SIGINT (Ctrl+C). Signal number: %d\n", sig);
-    /* if (working on exec){
-        kill(execPID, SIGINT);
+    if (globals->smashStatus == FG_EXEC) {
+        kill(globals->fgJob->pid, SIGTERM);
     }
-    */
     longjmp(env, 1); // jump back to the point where setjmp was called
 }
 
 void handleSIGTSTP(int sig) {
     printf("\nCaught SIGTSTP (Ctrl+Z). Signal number: %d\n", sig);
-    /* if (working on exec){
-        kill(execPID, SIGTSTP);
-        addJobToList(execPID, jobList, STOPPED);
+     if (globals->smashStatus == FG_EXEC){
+        kill(globals->fgJob->pid, SIGSTOP);
+        changeStatus(globals->fgJob, STOPPED); // change the status of the job to STOPPED
+        addExistingJob(globals->fgJob);
+
     }
-    else if (working on fg){
+    else if (globals->smashStatus == FG) {
         int pid = fork();
         if (pid == 0) { // child process
             raise(SIGSTOP); // send SIGSTOP to the foreground process
             return;
         } else { // parent process
-            addJobToList(fgPID, jobList, STOPPED);
-            jump(env); // jump back to the point where setjmp was called
+            changeStatus(globals->fgJob, STOPPED); // change the status of the job to STOPPED
+            addExistingJob(globals->fgJob);
+            longjmp(env, 1); // jump back to the point where setjmp was called
         }
-    } */
-    */
+    }
+    else{
+        longjmp(env, 1);
+    }
 }
 
 void setupSignalHandlers() {
@@ -56,8 +58,7 @@ void setupSignalHandlers() {
 }
 
 void sendSignal(int sig, unsigned int receiverJobID) {
-    jobList_t jobList = globals->jobList;
-    job_t job = jobLookup(jobList, receiverJobID);
+    job_t job = jobLookup(receiverJobID);
     if (job == NULL) {
         fprintf(stderr, "Job with ID %d not found\n", receiverJobID);
         return;

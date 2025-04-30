@@ -85,7 +85,7 @@ jobStatus getStatus(job_t job);
  * @param job The job whose status is to be changed.
  * @param new The new status to set.
  */
-void chnageStatus(job_t job, jobStatus new);
+void changeStatus(job_t job, jobStatus new);
 
 /*======================== Job List Commands ========================*/
 
@@ -108,7 +108,15 @@ void destroyJobList();
  * @param status The initial status of the job.
  * @param pid The process ID of the job.
  */
-void addJob(char* name, jobStatus status, pid_t pid);
+void addNewJob(char* name, jobStatus status, pid_t pid);
+
+/**
+ * @brief Adds an existing job to the job list.
+ * 
+ * @param job The job to add to the list.
+ */
+void addExistingJob(job_t job);
+
 
 /**
  * @brief Removes a job from the job list by its ID.
@@ -134,5 +142,20 @@ void printJobList();
  * @return Pointer to struct job if found, NULL if job doesn't exist.
  */
 job_t jobLookup(unsigned int ID);
+
+typedef enum {
+    IDLE,
+    FG,
+    FG_EXEC
+} smash_status;
+
+struct globals {
+	jobList_t jobList;
+	char* last_path;
+	smash_status smashStatus;
+	job_t fgJob;
+};
+typedef struct globals* globals_t;
+globals_t globals;
 
 #endif //__JOBS_H__
