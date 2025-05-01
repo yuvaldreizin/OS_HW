@@ -126,3 +126,37 @@ job_t jobLookup(unsigned int ID){
     }
     return NULL;
 }
+
+job_t jobPIDLookup(unsigned int PID){
+    jobList_t jobList = globals->jobList;
+    for (int i = 0; i < JOBS_NUM_MAX; i++) {
+        if (jobList->jobs[i] && jobList->jobs[i]->pid == PID) {
+            return jobList->jobs[i];
+        }
+    }
+    return NULL;
+}
+
+int maxAvailableJobID(){
+    if (globals->jobList->count == 0) {
+        return -1; 
+    }
+    for (int i = JOBS_NUM_MAX - 1; i >= 0; i--) {
+        if (jobLookup(i)){
+            return i;
+        }
+    }
+    return -1;
+}
+
+int maxStoppedJobID(){
+    if (globals->jobList->count == 0) {
+        return -1; 
+    }
+    for (int i = JOBS_NUM_MAX - 1; i >= 0; i--) {
+        if (jobLookup(i) && jobLookup(i)->status == STOPPED){
+            return i;
+        }
+    }
+    return -1;
+}

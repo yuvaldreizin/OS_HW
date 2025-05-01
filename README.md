@@ -27,3 +27,12 @@
     fixed compilation bugs.
     reorganized structs for compilation.
     added smash_status and fgJobt in globals for signal handling.
+
+- Amir's commit 1.05
+    fixed commands
+    fixed errors (basicly all defined are printed to stdout, not sure why perrorSmash uses stder...)
+    moved globals to smash
+    wrote smash - YUVAL go over it there are some comments + check if the implementation makes sense to you
+    added some functions to jobs to help me - maxAvailablejobID and maxStoppedJobID
+    didn't had time to check compilation
+    need to change diff inmpelemntation - must not use system!

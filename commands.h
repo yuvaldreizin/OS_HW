@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "jobs.h"
+#include "signals.h"
 #include <unistd.h>
 #include "utils.h"
 
@@ -59,7 +60,8 @@ typedef enum  {
 typedef enum {
 	SMASH_SUCCESS = 0,
 	SMASH_QUIT,
-	SMASH_FAIL
+	SMASH_FAIL,
+    SMASH_NULL
 	//feel free to add more values here or delete this
 } CommandResult;
 
