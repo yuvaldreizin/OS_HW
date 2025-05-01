@@ -1,16 +1,15 @@
 // jobs.c
 #include "jobs.h"
 
-job_t initJob(int ID, char* cmd, jobStatus status){
+job_t initJob(int ID, char* cmd, jobStatus status, pid_t pid){
     job_t job = MALLOC_VALIDATED(struct job, sizeof(struct job));
     job->cmd = MALLOC_VALIDATED(char, strlen(cmd) + 1);
     strcpy(job->cmd, cmd);
-    job->ID = ID;               // YUVAL - why not do it automatically using nextID?
+    job->ID = ID;
     job->status = status;
     job->creationTime = time(NULL);
+    job->pid = pid;
     return job;
-    //AMIR need to add job's PID for a check if the job is finished or not. I think that the proper place is smash.c (where the fork happens)
-    //maybe gedpid()?
 }
 
 void destroyJob(job_t job){
@@ -34,7 +33,8 @@ jobList_t initJobList(){
     return jobList;
 }
 
-void destroyJobList(jobList_t jobList) {
+void destroyJobList() {
+    jobList_t jobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX && jobList->count ; i++) {
         if (jobList->jobs[i]) {
             destroyJob(jobList->jobs[i]);
@@ -44,13 +44,14 @@ void destroyJobList(jobList_t jobList) {
     free(jobList);
 }
 
-void addJob(jobList_t jobList, char* name, jobStatus status){
+void addNewJob(char* name, jobStatus status, pid_t pid){
+    jobList_t jobList = globals->jobList;
     if (jobList->count == JOBS_NUM_MAX) {
         fprintf(stderr, "Job list is full\n");
         return;
     }
     unsigned int ID = jobList->nextID;
-    job_t new_job = initJob(ID, name, status);
+    job_t new_job = initJob(ID, name, status, pid);
     jobList->jobs[ID] = new_job;
     if(++jobList->count != JOBS_NUM_MAX) {
         while (jobList->jobs[ID])
@@ -59,7 +60,23 @@ void addJob(jobList_t jobList, char* name, jobStatus status){
     }
 }
 
-void removeJob(jobList_t jobList, unsigned int ID){
+void addExistingJob(job_t job){
+    jobList_t jobList = globals->jobList;
+    if (jobList->count == JOBS_NUM_MAX) {
+        fprintf(stderr, "Job list is full\n");
+        return;
+    }
+    unsigned int ID = jobList->nextID;
+    jobList->jobs[ID] = job;
+    if(++jobList->count != JOBS_NUM_MAX) {
+        while (jobList->jobs[ID])
+            ID++;
+        jobList->nextID = ID;
+    }
+}
+
+void removeJob(unsigned int ID){
+    jobList_t jobList = globals->jobList;
     destroyJob(jobList->jobs[ID]);
     jobList->jobs[ID] = NULL;
     jobList->count--;
@@ -68,20 +85,31 @@ void removeJob(jobList_t jobList, unsigned int ID){
     }
 }
 
-void removeFinishedJobs(jobList_t jobList){ //AMIR a fo=unction that removes finished jobs from the job list. need to activate it before any commant 
+jobStatus getStatus(job_t job){
+    return job->status;
+}
+
+void changeStatus(job_t job, jobStatus new){
+    job->status = new;
+}
+
+void removeFinishedJobs(){ //AMIR a function that removes finished jobs from the job list. need to activate it before any commant 
+    jobList_t jobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
         if (jobList->jobs[i] && jobList->jobs[i]->status == BACKGROUND){
             int status;
             pid_t result = waitpid(jobList->jobs[i]->pid, &status, WNOHANG); //WHOHANG flag to avoid blocking
             if (result == -1) // error occurred
                 perror("waitpid failed");
-            if (result > 0) // job finished
-                removeJob(jobList, i);
+            else if (result > 0) // job finished
+                removeJob(i);
+            //else - job still running, do nothing
         }
     }
 }
 
-void printJobList(jobList_t jobList){
+void printJobList(){
+    jobList_t jobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
         if (jobList->jobs[i]) {
             job_t curr_job = jobList->jobs[i];
@@ -89,4 +117,12 @@ void printJobList(jobList_t jobList){
             printf("[%d] %s: %d %d secs%s\n", curr_job->ID, curr_job->cmd, curr_job->pid, time_elapsed_sec,(curr_job->status == STOPPED)? " stopped" : ""); //ASSUMPTION - if job isn't stopped we dont print the space after "secs"
         }
     }
+}
+
+job_t jobLookup(unsigned int ID){
+    jobList_t jobList = globals->jobList;
+    if (ID < JOBS_NUM_MAX) {
+        return jobList->jobs[ID];
+    }
+    return NULL;
 }

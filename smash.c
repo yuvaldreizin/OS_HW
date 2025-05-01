@@ -16,11 +16,6 @@
 * global variables & data structures
 =============================================================================*/
 char _line[CMD_LENGTH_MAX];
-typdef struct globals {
-	jobList_t jobList;
-	char* last_path;
-} globals_t;
-globals_t globals = {NULL, NULL};
 
 /*=============================================================================
 * main function
@@ -30,6 +25,7 @@ int main(int argc, char* argv[])
 	globals->joblist = initJobList();
 	char _cmd[CMD_LENGTH_MAX];
 	while(1) {
+		setjmp(env); // set the environment for longjmp
 		printf("smash > ");
 		fgets(_line, CMD_LENGTH_MAX, stdin);
 		strcpy(_cmd, _line);
