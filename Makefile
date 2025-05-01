@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c99 -Wall -Werror -pedantic-errors -pthread -DNDEBUG
+CFLAGS = -std=c99 -Wall -Werror -pedantic-errors -pthread -DNDEBUG -g
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 TARGET = smash

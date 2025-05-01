@@ -84,7 +84,7 @@ int run_cmd(cmd *cmd){
 int args_num_error(cmd *cmd, int expected_num){
     if (cmd->nargs != expected_num + 1){
 		// handle error
-        fprintf(stderr, "smash error: %s: expected %d arguments\n", cmd->command, expected_num);
+        printf("smash error: %s: expected %d arguments\n", cmd->command, expected_num);
 		return INVALID_COMMAND;
 	}
     return VALID_COMMAND;
@@ -124,7 +124,7 @@ int cd(cmd *cmd){
 	}
 	if (strcmp(cmd->args[1], "-") == 0){ // case: "-" (go to last path)
 		if(!globals->last_path){
-			perrorSmash(cmd->command, "old pwd not set");
+			printf("smash error: cd: expected %d arguments\n", 1);
 			return INVALID_COMMAND;
 		} else {
 			pwd = getcwd(NULL, 0);
@@ -139,10 +139,10 @@ int cd(cmd *cmd){
 		int res = chdir(cmd->args[1]);
 		if (res == -1){
 			if (errno = ENOENT){
-				perrorSmash(cmd->command, "target directory does not exist");
+				printf("smash error: cd: target directory does not exist\n");
 				return INVALID_COMMAND;
 			} else if (errno = ENOTDIR){
-				fprintf(stderr, "smash error:%s%s%s: not a directory\n",
+				printf("smash error:%s%s%s: not a directory\n",
 					cmd ? cmd : "",
 					cmd ? ": " : "",
 					cmd->args[1]);
@@ -164,14 +164,14 @@ int jobs(cmd *cmd){
 
 int kill(cmd *cmd){
 	if (cmd->nargs != 3 || /* ||*/ ((int)(cmd->args[1]) > 0 && (int)(cmd->args[1]) < _NSIG)){ // TODO - fix casting
-		perrorSmash(cmd->command, "invalid arguments");
+		printf("smash error: cd: invalid arguments\n");
 		return INVALID_COMMAND;
 	} 
 	int signum = cmd->args[1];
 	int jobID = cmd->args[2];
 
 	if (!lookup(jobID))
-		fprintf(stderr, "smash error: kill: job id %d does not exist\n",jobID);
+		printf("smash error: kill: job id %d does not exist\n",jobID);
 	// send signal
 	return VALID_COMMAND;
 }
@@ -179,7 +179,7 @@ int kill(cmd *cmd){
 int fg(cmd  *cmd){
 	int jobID;
 	if (cmd->nargs > 2){
-		perrorSmash(cmd->command, "invalid arguments");
+		printf("smash error: fg: invalid arguments\n");
 		return INVALID_COMMAND;
 	} else if (cmd->args[1] == NULL){
 		if (globals->jobList->count == 0){
@@ -205,7 +205,7 @@ int fg(cmd  *cmd){
 int bg(cmd *cmd){
 	int jobID;
 	if (cmd->nargs > 2){
-		perrorSmash(cmd->command, "invalid arguments");
+		printf(stdout, "smash error: bg: invalid arguments\n");
 		return INVALID_COMMAND;
 	} else if (cmd->args[1] == NULL){
 		if (/*are there any jobs*/ && /*are there any stopped jobs - for with lookup*/){
@@ -218,7 +218,7 @@ int bg(cmd *cmd){
 		if (/*doesn't exist*/){
 			return INVALID_COMMAND;
 		} else if (getStatus(globals->jobList->jobs[jobID];) != STOPPED) {
-			fprintf(stderr, "smash error: bg: job id %d is already in background\n",jobID);
+			printf("smash error: bg: job id %d is already in background\n",jobID);
 			return INVALID_COMMAND;
 		}
 	}
@@ -230,13 +230,13 @@ int bg(cmd *cmd){
 
 int quit(cmd *cmd){
 	if (cmd->nargs > 2){
-		fprintf(stderr, "smash error: quit: expected 0 or 1 arguments\n");
+		printf("smash error: quit: expected 0 or 1 arguments\n");
 		return INVALID_COMMAND;
 	} else if (cmd->nargs == 1){
 		exit(0);
 	} else { // kill given
 		if (strcmp()(cmd->args[1], "kill") != 0){
-			fprintf(stderr, "smash error: quit: unexpected argument\n");
+			printf("smash error: quit: unexpected argument\n");
 			return INVALID_COMMAND;
 		}
 		for (int i = 0; i < JOBS_NUM_MAX; i++){
@@ -246,6 +246,7 @@ int quit(cmd *cmd){
 				printf("sending SIGTERM... ");
 				time_t start = time(NULL);
 				int done = 0;
+				sleep(5);
 				// while(difftime(time(NULL), start) < 5){	// use sleep(5)
 				// 	int res = waitpid(obList_t->jobs[i]->pid, WNOHANG);
 				// 	if (res == 0){
@@ -276,11 +277,11 @@ int diff(cmd *cmd){
 	struct stat st;
 	stat(cmd->args[1], &st);
 	if(stat(cmd->args[1], &st) == -1 || stat(cmd->args[2], &st) == -1){
-		perrorSmash(cmd->command, "expected valid paths for files");
+		printf(stdout, "smash error: diff: expected valid paths for files\n");
 		return INVALID_COMMAND;
 	}
 	if(S_ISREG(cmd->args[1]) && S_ISREG(cmd->args[2])){
-		perrorSmash(cmd->command, "paths are not files");
+		printf("smash error: diff: paths are not files\n");
 		return INVALID_COMMAND;
 	}
 	// diff
@@ -288,5 +289,17 @@ int diff(cmd *cmd){
 }
 
 int run_ext_cmd(cmd *cmd){
-	// exec + wait
+	int is_file = access(cmd->command, F_OK);
+	if (is_file == -1){ // file not found
+		printf("smash error: external: cannot find program\n");
+		return INVALID_COMMAND;
+	}
+	int id = fork();
+	if (id==0){
+		int ret = execv(cmd->command, cmd->args);
+		if (ret ==-1) printf("smash error: external: invalid command\n");
+	} else {
+		waitpid(id, NULL, 0);
+	}
+	return VALID_COMMAND;
 }
