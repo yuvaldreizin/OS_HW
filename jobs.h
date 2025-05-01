@@ -143,19 +143,17 @@ void printJobList();
  */
 job_t jobLookup(unsigned int ID);
 
+job_t jobPIDLookup(unsigned int PID);
+
+int maxAvailableJobID();
+int maxStoppedJobID();
+
 typedef enum {
     IDLE,
     FG,
     FG_EXEC
 } smash_status;
 
-struct globals {
-	jobList_t jobList;
-	char* last_path;
-	smash_status smashStatus;
-	job_t fgJob;
-};
-typedef struct globals* globals_t;
-globals_t globals;
+
 
 #endif //__JOBS_H__
