@@ -133,7 +133,7 @@ int pwd(cmd *cmd){
 		return SMASH_FAIL;
 	} else { // running in job
 		// use global pointers struct and free previously allocated memory if exists
-		int id = jobPIDLookup(getpid())->ID;
+		int id = jobPIDLookup(getpid());
 		if (!globals->pwd_pointers[id]) free(globals->pwd_pointers[id]);
 
 		globals->pwd_pointers[id] = getcwd(NULL, 0); 
@@ -273,7 +273,7 @@ int bg(cmd *cmd){
 		}
 	}
 	struct job *job = globals->jobList->jobs[jobID];
-	printf("%s: %d", job->cmd, job->ID);
+	printf("%s: %d", job->cmd, job);
 	kill(job->pid, SIGCONT);
 	return SMASH_SUCCESS;
 }
@@ -333,7 +333,7 @@ int diff(cmd *cmd){
 		return SMASH_FAIL;
 	}
 	// diff files
-	int id = jobPIDLookup(getpid())->ID;
+	int id = jobPIDLookup(getpid());
 	if (globals->file1[id]) fclose(globals->file1[id]);
 	if (globals->file2[id]) fclose(globals->file2[id]);
 	globals->file1[id] = fopen(cmd->args[1], "r");
