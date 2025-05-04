@@ -29,7 +29,7 @@ void perrorSmash(const char* cmd, const char* msg){
  * recieve a string and an empty cmd pointer
  * return a filled cmd struct, including memory allocation
  */
-int parseCmd(char* line, cmd *command){
+int parseCmd(char* line, cmd **command){
 	char* delimiters = " \t\n"; //parsing should be done by spaces, tabs or newlines
 	char* recieved_cmd = strtok(line, delimiters); //read strtok documentation - parses string by delimiters
 	if(!recieved_cmd)
@@ -46,16 +46,17 @@ int parseCmd(char* line, cmd *command){
 		nargs++;
 	}
 
-	command = MALLOC_VALIDATED(struct cmd, sizeof(struct cmd));
-	command->command = MALLOC_VALIDATED(char, strlen(recieved_cmd) + 1);
+	*command = MALLOC_VALIDATED(cmd, sizeof(cmd));
+	(*command)->command = MALLOC_VALIDATED(char, (strlen(recieved_cmd) + 1));
 	int args_byte_size = 0;	
 	for (int i = 0; i < nargs; i++){
 		args_byte_size += strlen(args[i]) + 1;
 	}
-	command->args = MALLOC_VALIDATED(char*, args_byte_size);
-	command->nargs = nargs;
-	command->status = strcmp(args[nargs],"&") == 0 ? BACKGROUND : FOREGROUND ;
-	command->env = (isInternalCommand(command) >= 0) ? INTERNAL : EXTERNAL;
+	(*command)->args = MALLOC_VALIDATED(char*, args_byte_size);
+	(*command)->args = args;
+	(*command)->nargs = nargs;
+	(*command)->status = strcmp(args[nargs],"&") == 0 ? BACKGROUND : FOREGROUND ;
+	(*command)->env = (isInternalCommand((*command)) >= 0) ? INTERNAL : EXTERNAL;
 
 	return VALID_COMMAND; 
 }
@@ -91,8 +92,8 @@ int isInternalCommand(cmd *cmd){
  * @return End status - success or failure
  */
 int run_cmd(cmd *cmd){
-	if (!cmd) return 0;
-	if (cmd->env){
+	if (!cmd) return SMASH_FAIL;
+	if (cmd->env == INTERNAL){
 		int index = isInternalCommand(cmd); // get index
 		return commands_list[index].func(cmd); 
 	} else { // EXTERNAL

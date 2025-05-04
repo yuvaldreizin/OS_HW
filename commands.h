@@ -73,7 +73,7 @@ typedef enum {
 /*=============================================================================
 * global functions
 =============================================================================*/
-int parseCmd(char* line, cmd *command);
+int parseCmd(char* line, cmd **command);
 
 void destroyCmd(cmd *cmd);
 

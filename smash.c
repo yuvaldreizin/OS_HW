@@ -23,19 +23,14 @@ char _line[CMD_LENGTH_MAX];
 globals_t globals;
 
 void destroy_globals() {
-	if (!(globals->last_path)) {
-		free(globals->last_path);
-	}
-	if (!(globals->cur_path)) {
-		free(globals->cur_path);
-	}
 	destroyJobList(globals->jobList);
-	if (!(globals->fgJob)) free(globals->fgJob);
+	if ((globals->fgJob)) destroyJob(globals->fgJob);
 	for (int i = 0; i < JOBS_NUM_MAX; i++){
 		if (globals->pwd_pointers[i]) free(globals->pwd_pointers[i]);
 		if (globals->file1[i]) fclose(globals->file1[i]);
 		if (globals->file2[i]) fclose(globals->file2[i]);
 	}
+	if (globals) free(globals);
 }
 
 /*=============================================================================
@@ -44,6 +39,7 @@ void destroy_globals() {
 int main(int argc, char* argv[])
 {
 	// Gloabls
+	globals = malloc(sizeof(struct globals));
 	globals->jobList = initJobList();
 	char _cmd[CMD_LENGTH_MAX];
 	while(1) { 
@@ -57,14 +53,17 @@ int main(int argc, char* argv[])
 		
 		//parse cmd
 		cmd *command = NULL;
-		int status = parseCmd(_line, command);
-		if (status == INVALID_COMMAND) {
+		ParsingError parse_status = parseCmd(_line, &command);
+		if (parse_status == INVALID_COMMAND) {
 			printf("smash error: invalid command\n");	// ASSUMPTION - basing on ext-command guidlins
 			continue;
 		}
-
+		
+		// printf("\nWASTED\n\n");
+		printf("\nparse_status - %d\n\n", parse_status);	
+		printf("\ncommand->status - %d\n\n", command->status);	
 		//check for status and execute (execv + args) / fork and add to jobList
-		int end_status = SMASH_NULL;
+		CommandResult end_status = SMASH_NULL;
 		if (command->status == FOREGROUND){
 			end_status = run_cmd(command);
 			if (command->env == EXTERNAL){
