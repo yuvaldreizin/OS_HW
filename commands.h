@@ -9,6 +9,8 @@
 #include "signals.h"
 #include <unistd.h>
 #include "utils.h"
+#include "sys/stat.h"
+
 
 #define CMD_LENGTH_MAX 120
 #define ARGS_NUM_MAX 20
@@ -104,5 +106,7 @@ internal_command internal_command_t[] = {
 #define NUM_INTERNAL_COMMANDS (sizeof(internal_command_t) / sizeof(struct internal_command))
 
 int run_ext_cmd(cmd *cmd);
+
+int commandPID(cmd* cmd);
 
 #endif //COMMANDS_H

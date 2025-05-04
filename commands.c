@@ -93,7 +93,7 @@ int args_num_error(cmd *cmd, int expected_num){
         printf("smash error: %s: expected %d arguments\n", cmd->command, expected_num);
 		return INVALID_COMMAND;
 	}
-    return VALID_COMMAND
+    return VALID_COMMAND;
 }
 
 /**
@@ -137,8 +137,8 @@ int pwd(cmd *cmd){
 		if (!globals->pwd_pointers[id]) free(globals->pwd_pointers[id]);
 
 		globals->pwd_pointers[id] = getcwd(NULL, 0); 
-		if (pwd != NULL){
-			printf("%s\n", pwd);
+		if (globals->pwd_pointers[id] != NULL){
+			printf("%s\n", globals->pwd_pointers[id]);
 			return SMASH_SUCCESS;
 		} 
 		perror("smash error: pwd: getcwd failed");
@@ -178,7 +178,7 @@ int cd(cmd *cmd){
 			return SMASH_SUCCESS;
 		}
 	}
-	
+	return SMASH_FAIL;
 }
 
 /**
@@ -208,7 +208,7 @@ int smashKill(cmd *cmd){
 	int signum = (int)(strtol(cmd->args[1], NULL, 10));
 	int jobID = (int)(strtol(cmd->args[2], NULL, 10));
 
-	if (!lookup(jobID))
+	if (!jobLookup(jobID))
 		printf("smash error: kill: job id %d does not exist\n",jobID);
 	sendSignal(signum, jobID);
 	return SMASH_SUCCESS;
@@ -273,7 +273,7 @@ int bg(cmd *cmd){
 		}
 	}
 	struct job *job = globals->jobList->jobs[jobID];
-	printf("%s: %s", job->cmd, job->ID);
+	printf("%s: %d", job->cmd, job->ID);
 	kill(job->pid, SIGCONT);
 	return SMASH_SUCCESS;
 }
@@ -325,7 +325,7 @@ int diff(cmd *cmd){
 	struct stat st2;
 	stat(cmd->args[1], &st);
 	if(stat(cmd->args[1], &st) == -1 || stat(cmd->args[2], &st2) == -1){
-		printf(stdout, "smash error: diff: expected valid paths for files\n");
+		printf("smash error: diff: expected valid paths for files\n");
 		return SMASH_FAIL;
 	}
 	if(!S_ISREG(st.st_mode) || !S_ISREG(st2.st_mode)){
@@ -355,7 +355,7 @@ int diff(cmd *cmd){
 		if (!ptr1 || !ptr2){ // error or EOF
 			if (ptr1 || ptr2){ //not finished together
 				break;
-			} else if (line1 && line2 && strcmp(line1, line2)){ // diff, last line till EOF
+			} else if (line1[0] && line2[0] && strcmp(line1, line2)){ // diff, last line till EOF
 				break;
 			} else if (feof(globals->file1[id]) && feof(globals->file2[id])){
 				printf("0");
@@ -400,4 +400,8 @@ int run_ext_cmd(cmd *cmd){
 		}
 	}
 	return SMASH_SUCCESS;
+}
+
+int commandPID(cmd *cmd){
+	return getpid();
 }
