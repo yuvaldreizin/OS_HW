@@ -11,6 +11,17 @@
 
 #define JOBS_NUM_MAX 100
 
+struct globals {
+	jobList_t jobList;
+	char* last_path;
+	char* cur_path;
+	// smash_status smashStatus;	// YUVAL - what is this used for?
+	job_t fgJob;
+	char *pwd_pointers[JOBS_NUM_MAX]; 
+};
+typedef struct globals* globals_t;
+extern globals_t globals;
+
 /**
  * @enum jobStatus
  * @brief Represents the status of a job.
@@ -26,7 +37,6 @@ typedef enum {
  * @brief Represents a single job.
  */
 struct job {
-    unsigned int ID;         /**< Unique SMASH identifier for the job. */
     char *cmd;               /**< Command associated with the job. */
     jobStatus status;        /**< Current status of the job. */
     time_t creationTime;     /**< Time when the job was created. */
@@ -56,13 +66,12 @@ typedef struct jobList* jobList_t;
 /**
  * @brief Initializes a new job.
  * 
- * @param ID The unique identifier for the job.
  * @param cmd The command associated with the job.
  * @param status The initial status of the job.
  * @param pid The process ID of the job.
  * @return A pointer to the initialized job.
  */
-job_t initJob(int ID, char* cmd, jobStatus status, pid_t pid);
+job_t initJob(char* cmd, jobStatus status, pid_t pid);
 
 /**
  * @brief Destroys a job and frees its resources.
@@ -107,15 +116,17 @@ void destroyJobList();
  * @param name The name/command of the job.
  * @param status The initial status of the job.
  * @param pid The process ID of the job.
+ * @return 0 on success, -1 on failure
  */
-void addNewJob(char* name, jobStatus status, pid_t pid);
+int addNewJob(char* name, jobStatus status, pid_t pid);
 
 /**
  * @brief Adds an existing job to the job list.
  * 
  * @param job The job to add to the list.
+ * @return 0 on success, -1 on failure
  */
-void addExistingJob(job_t job);
+int addExistingJob(job_t job);
 
 
 /**
@@ -143,7 +154,7 @@ void printJobList();
  */
 job_t jobLookup(unsigned int ID);
 
-job_t jobPIDLookup(unsigned int PID);
+int jobPIDLookup(unsigned int PID);
 
 int maxAvailableJobID();
 int maxStoppedJobID();
