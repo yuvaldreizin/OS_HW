@@ -13,6 +13,7 @@
 #define CMD_LENGTH_MAX 120
 #define ARGS_NUM_MAX 20
 #define JOBS_NUM_MAX 100
+#define DIFF_LINE_SIZE 500
 
 
 /**

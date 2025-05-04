@@ -22,7 +22,10 @@ struct globals {
 	char* cur_path;
 	smash_status smashStatus;	// YUVAL - what is this used for?
 	job_t fgJob;
+	// memory pointers to avoid leaks when killing jobs
 	char *pwd_pointers[JOBS_NUM_MAX]; 
+	FILE *file1[JOBS_NUM_MAX];
+	FILE *file2[JOBS_NUM_MAX];
 };
 typedef struct globals* globals_t;
 globals_t globals;
@@ -38,6 +41,8 @@ void destroy_globals() {
 	if !(globals->fgjob) free(globals->fgJob);
 	for (int i = 0; i < JOBS_NUM_MAX; i++){
 		if (globals->pwd_pointers[i]) free(globals->pwd_pointers[i]);
+		if (globals->file1[i]) fclose(globals->file1[i]);
+		if (globals->file2[i]) fclose(globals->file2[i]);
 	}
 }
 

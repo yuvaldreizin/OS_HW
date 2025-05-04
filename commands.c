@@ -328,13 +328,55 @@ int diff(cmd *cmd){
 		printf(stdout, "smash error: diff: expected valid paths for files\n");
 		return SMASH_FAIL;
 	}
-	if(S_ISREG(st.st_mode) || S_ISREG(st2.st_mode)){
+	if(!S_ISREG(st.st_mode) || !S_ISREG(st2.st_mode)){
 		printf("smash error: diff: paths are not files\n");
 		return SMASH_FAIL;
 	}
-	// diff
-	// CANT USE SYSTEM!!!!!
-	return system("diff %s %s", cmd->args[1], cmd->args[2]);
+	// diff files
+	int id = jobPIDLookup(getpid())->ID;
+	if (globals->file1[id]) fclose(globals->file1[id]);
+	if (globals->file2[id]) fclose(globals->file2[id]);
+	globals->file1[id] = fopen(cmd->args[1], "r");
+	if (!globals->file1[id]){
+		perrorSmash("diff", "failed to open file 1");
+		return SMASH_FAIL;
+	}
+	globals->file2[id] = fopen(cmd->args[2], "r");
+	if (!globals->file2[id]){
+		perrorSmash("diff", "failed to open file 2");
+		fclose(globals->file1[id]);
+		return SMASH_FAIL;
+	}
+	char line1[DIFF_LINE_SIZE]; // array for easier memory management
+	char line2[DIFF_LINE_SIZE];
+	while (true){
+		char *ptr1 = fgets(line1, DIFF_LINE_SIZE, globals->file1[id]);
+		char *ptr2 = fgets(line2, DIFF_LINE_SIZE, globals->file2[id]);
+		if (!ptr1 || !ptr2){ // error or EOF
+			if (ptr1 || ptr2){ //not finished together
+				break;
+			} else if (line1 && line2 && strcmp(line1, line2)){ // diff, last line till EOF
+				break;
+			} else if (feof(globals->file1[id]) && feof(globals->file2[id])){
+				printf("0");
+				fclose(globals->file1[id]);
+				fclose(globals->file2[id]);
+				globals->file1[id] = NULL;
+				globals->file2[id] = NULL;
+				return SMASH_SUCCESS;
+			}
+
+		} else if (strcmp(line1,line2)){ // found a diff
+			break;
+		} 
+	}
+	printf("1");
+	fclose(globals->file1[id]);
+	fclose(globals->file2[id]);
+	globals->file1[id] = NULL;
+	globals->file2[id] = NULL;
+	return SMASH_FAIL;
+
 }
 
 /**
