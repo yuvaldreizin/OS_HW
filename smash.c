@@ -21,22 +21,27 @@ struct globals {
 	char* last_path;
 	char* cur_path;
 	job_t fgJob;
+	// memory pointers to avoid leaks when killing jobs
 	char *pwd_pointers[JOBS_NUM_MAX]; 
+	FILE *file1[JOBS_NUM_MAX];
+	FILE *file2[JOBS_NUM_MAX];
 };
 typedef struct globals* globals_t;
 globals_t globals;
 
 void destroy_globals() {
-	if !(globals->last_path) {
+	if (!(globals->last_path)) {
 		free(globals->last_path);
 	}
-	if !(globals->cur_path) {
+	if (!(globals->cur_path)) {
 		free(globals->cur_path);
 	}
 	destroyJobList(globals->jobList);
-	if !(globals->fgjob) free(globals->fgJob);
+	if (!(globals->fgjob)) free(globals->fgJob);
 	for (int i = 0; i < JOBS_NUM_MAX; i++){
 		if (globals->pwd_pointers[i]) free(globals->pwd_pointers[i]);
+		if (globals->file1[i]) fclose(globals->file1[i]);
+		if (globals->file2[i]) fclose(globals->file2[i]);
 	}
 }
 
@@ -59,7 +64,7 @@ int main(int argc, char* argv[])
 		
 		//parse cmd
 		cmd *command;
-		int status = parse_cmd(_line, command);
+		int status = parseCmd(_line, command);
 		if (status == INVALID_COMMAND) {
 			printf("smash error: invalid command\n");	// ASSUMPTION - basing on ext-command guidlins
 			continue;
@@ -74,6 +79,7 @@ int main(int argc, char* argv[])
 				// YUVAL - make sure I did this init right
 				// YUVAL - change initJob to use nextID and check if not in max (instead of in addNewJob) so we can use it here
 				globals->fgJob = initJob(_line, FOREGROUND, command->pid); 
+
 				end_status = run_cmd(command);
 			}
 		} else { // BACKGROUND
@@ -81,12 +87,12 @@ int main(int argc, char* argv[])
 			if (pid == 0) { // child process
 				end_status = run_cmd(command);
 			} else { // parent process
-				addNewJob(_line, BACKGROUND, command->pid); 
+				addNewJob(_line, BACKGROUND, commandPID(command)); 
 				// ASSUMPTION - are we dropping jobs/commands if list is full?
 				// YUVAL - We need an indication at least to destroy the job
 			}
 		}
-`
+
 		//initialize buffers for next command
 		_line[0] = '\0';
 		_cmd[0] = '\0';
@@ -95,6 +101,6 @@ int main(int argc, char* argv[])
 			break; 
 		}
 	}
-	destroy_globals()
+	destroy_globals();
 	return 0;
 }
