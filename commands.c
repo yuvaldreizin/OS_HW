@@ -1,6 +1,22 @@
 //commands.c
 #include "commands.h"
 
+internal_command_t commands_list[] = {
+    {"showpid", showpid},
+    {"pwd", pwd},
+    {"cd", cd},
+    {"jobs", jobs},
+    {"kill", smashKill},
+    {"fg", fg},
+    {"bg", bg},
+    {"quit", quit},
+    {"diff", diff}
+};
+
+#define NUM_INTERNAL_COMMANDS (sizeof(commands_list) / sizeof(internal_command_t))
+
+
+
 //example function for printing errors from internal commands
 void perrorSmash(const char* cmd, const char* msg){
     fprintf(stderr, "smash error:%s%s%s\n",

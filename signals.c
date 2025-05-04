@@ -7,7 +7,7 @@ void handleSIGINT(int sig) {
     if (globals->fgJob) {
         kill(globals->fgJob->pid, SIGTERM);
     }
-    longjmp(env, 1); // jump back to the point where setjmp was called
+    longjmp(env_buf, 1); // jump back to the point where setjmp was called
 }
 
 void handleSIGTSTP(int sig) {
@@ -18,7 +18,7 @@ void handleSIGTSTP(int sig) {
         globals->fgJob->pid = getpid(); // update the pid of the job
         addExistingJob(globals->fgJob);
         globals->fgJob = NULL; // clear the foreground job
-        longjmp(env, 1);
+        longjmp(env_buf, 1);
     }
 }
 

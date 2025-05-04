@@ -12,7 +12,7 @@
 * global variables
 =============================================================================*/
 
-jmp_buf env; // global variable to store the environment for longjmp
+extern jmp_buf env_buf; // global variable to store the environment for longjmp
 
 /*=============================================================================
 * global functions

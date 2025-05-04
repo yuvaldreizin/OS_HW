@@ -15,6 +15,9 @@
 /*=============================================================================
 * global variables & data structures
 =============================================================================*/
+jmp_buf env_buf; // global variable to store the environment for longjmp
+
+
 char _line[CMD_LENGTH_MAX];
 
 globals_t globals;
@@ -44,7 +47,7 @@ int main(int argc, char* argv[])
 	globals->jobList = initJobList();
 	char _cmd[CMD_LENGTH_MAX];
 	while(1) { 
-		setjmp(env); // set the environment for longjmp
+		setjmp(env_buf); // set the environment for longjmp
 		printf("smash > ");
 		fgets(_line, CMD_LENGTH_MAX, stdin);
 		strcpy(_cmd, _line);

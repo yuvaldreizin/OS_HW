@@ -92,20 +92,6 @@ int quit(cmd *cmd);
 int diff(cmd *cmd);
 
 
-internal_command_t commands_list[] = {
-    {"showpid", showpid},
-    {"pwd", pwd},
-    {"cd", cd},
-    {"jobs", jobs},
-    {"kill", smashKill},
-    {"fg", fg},
-    {"bg", bg},
-    {"quit", quit},
-    {"diff", diff}
-};
-
-#define NUM_INTERNAL_COMMANDS (sizeof(commands_list) / sizeof(internal_command_t))
-
 int run_ext_cmd(cmd *cmd);
 
 int commandPID(cmd* cmd);
