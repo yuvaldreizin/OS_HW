@@ -20,7 +20,6 @@ struct globals {
 	jobList_t jobList;
 	char* last_path;
 	char* cur_path;
-	smash_status smashStatus;	// YUVAL - what is this used for?
 	job_t fgJob;
 	char *pwd_pointers[JOBS_NUM_MAX]; 
 };
@@ -74,7 +73,7 @@ int main(int argc, char* argv[])
 				// create fgJob in case of SIGSTOP
 				// YUVAL - make sure I did this init right
 				// YUVAL - change initJob to use nextID and check if not in max (instead of in addNewJob) so we can use it here
-				globals->fgJob = initJob(globals->jobList->nextID, _line, FOREGROUND, command->pid); 
+				globals->fgJob = initJob(_line, FOREGROUND, command->pid); 
 				end_status = run_cmd(command);
 			}
 		} else { // BACKGROUND
