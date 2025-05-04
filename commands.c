@@ -64,7 +64,7 @@ void destroyCmd(cmd* cmd){
 int isInternalCommand(cmd *cmd){
 	//check if command is internal or external
 	for (int i = 0; i < NUM_INTERNAL_COMMANDS; i++){
-		if (strcmp(cmd->command, internal_command_t[i].command) == 0)
+		if (strcmp(cmd->command, commands_list[i].command) == 0)
 			return i; 
 	}
 	return -1; // External command
@@ -78,7 +78,7 @@ int run_cmd(cmd *cmd){
 	if (!cmd) return 0;
 	if (cmd->env){
 		int index = isInternalCommand(cmd); // get index
-		return internal_command_t[index].func(cmd); 
+		return commands_list[index].func(cmd); 
 	} else { // EXTERNAL
 		return run_ext_cmd(cmd);
 	}
@@ -242,8 +242,8 @@ int fg(cmd  *cmd){
 		kill(job->pid, SIGCONT);
 	}
 	printf("%s", job->cmd);
-	waitpid(job->pid);
-	removeJob(globals->jobList, jobID);
+	waitpid(job->pid, NULL, 0);
+	removeJob(jobID);
 	return SMASH_SUCCESS;
 }
 
@@ -273,7 +273,7 @@ int bg(cmd *cmd){
 		}
 	}
 	struct job *job = globals->jobList->jobs[jobID];
-	printf("%s: %d", job->cmd, job);
+	printf("%s: %d", job->cmd, getpid());
 	kill(job->pid, SIGCONT);
 	return SMASH_SUCCESS;
 }
@@ -304,7 +304,7 @@ int quit(cmd *cmd){
 				fflush(stdout);
 				sleep(5);
 				// use "dynamic" check during 5 seconds or "static" after them?
-				if (waitpid(obList_t->jobs[i]->pid, WNOHANG) == 0){ // job still running
+				if (waitpid(globals->jobList->jobs[i]->pid, NULL, WNOHANG) == 0){ // job still running
 					kill(job->pid, SIGKILL);
 					printf("sending SIGKILL... ");
 					fflush(stdout);

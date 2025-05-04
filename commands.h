@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include "utils.h"
 #include "sys/stat.h"
-
+#include <errno.h>
 
 #define CMD_LENGTH_MAX 120
 #define ARGS_NUM_MAX 20
@@ -41,10 +41,11 @@ typedef struct cmd {
 
 typedef int (*cmd_func)(struct cmd *cmd);
 
-typedef struct internal_command {
+struct internal_command{
     char* command;             /**< Name of the internal command. */
     cmd_func func;             /**< Function pointer to the command's implementation. */
-} internal_command;
+};
+typedef struct internal_command internal_command_t;
 
 
 
@@ -91,7 +92,7 @@ int quit(cmd *cmd);
 int diff(cmd *cmd);
 
 
-internal_command internal_command_t[] = {
+internal_command_t commands_list[] = {
     {"showpid", showpid},
     {"pwd", pwd},
     {"cd", cd},
@@ -103,7 +104,7 @@ internal_command internal_command_t[] = {
     {"diff", diff}
 };
 
-#define NUM_INTERNAL_COMMANDS (sizeof(internal_command_t) / sizeof(struct internal_command))
+#define NUM_INTERNAL_COMMANDS (sizeof(commands_list) / sizeof(internal_command_t))
 
 int run_ext_cmd(cmd *cmd);
 

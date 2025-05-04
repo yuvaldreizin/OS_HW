@@ -11,17 +11,6 @@
 
 #define JOBS_NUM_MAX 100
 
-struct globals {
-	jobList_t jobList;
-	char* last_path;
-	char* cur_path;
-	// smash_status smashStatus;	// YUVAL - what is this used for?
-	job_t fgJob;
-	char *pwd_pointers[JOBS_NUM_MAX]; 
-};
-typedef struct globals* globals_t;
-extern globals_t globals;
-
 /**
  * @enum jobStatus
  * @brief Represents the status of a job.
@@ -56,6 +45,19 @@ struct jobList {
 };
 
 typedef struct jobList* jobList_t;
+
+struct globals {
+    jobList_t jobList;
+    char* last_path;
+    char* cur_path;
+    // smash_status smashStatus;	// YUVAL - what is this used for?
+    job_t fgJob;
+    char *pwd_pointers[JOBS_NUM_MAX]; 
+	FILE *file1[JOBS_NUM_MAX];
+	FILE *file2[JOBS_NUM_MAX];
+};
+typedef struct globals* globals_t;
+extern globals_t globals;
 
 /*=============================================================================
 * global functions

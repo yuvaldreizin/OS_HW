@@ -16,17 +16,7 @@
 * global variables & data structures
 =============================================================================*/
 char _line[CMD_LENGTH_MAX];
-struct globals {
-	jobList_t jobList;
-	char* last_path;
-	char* cur_path;
-	job_t fgJob;
-	// memory pointers to avoid leaks when killing jobs
-	char *pwd_pointers[JOBS_NUM_MAX]; 
-	FILE *file1[JOBS_NUM_MAX];
-	FILE *file2[JOBS_NUM_MAX];
-};
-typedef struct globals* globals_t;
+
 globals_t globals;
 
 void destroy_globals() {
@@ -37,7 +27,7 @@ void destroy_globals() {
 		free(globals->cur_path);
 	}
 	destroyJobList(globals->jobList);
-	if (!(globals->fgjob)) free(globals->fgJob);
+	if (!(globals->fgJob)) free(globals->fgJob);
 	for (int i = 0; i < JOBS_NUM_MAX; i++){
 		if (globals->pwd_pointers[i]) free(globals->pwd_pointers[i]);
 		if (globals->file1[i]) fclose(globals->file1[i]);
@@ -51,7 +41,7 @@ void destroy_globals() {
 int main(int argc, char* argv[])
 {
 	// Gloabls
-	globals->joblist = initJobList();
+	globals->jobList = initJobList();
 	char _cmd[CMD_LENGTH_MAX];
 	while(1) { 
 		setjmp(env); // set the environment for longjmp
@@ -63,7 +53,7 @@ int main(int argc, char* argv[])
 		removeFinishedJobs();
 		
 		//parse cmd
-		cmd *command;
+		cmd *command = NULL;
 		int status = parseCmd(_line, command);
 		if (status == INVALID_COMMAND) {
 			printf("smash error: invalid command\n");	// ASSUMPTION - basing on ext-command guidlins
@@ -78,7 +68,7 @@ int main(int argc, char* argv[])
 				// create fgJob in case of SIGSTOP
 				// YUVAL - make sure I did this init right
 				// YUVAL - change initJob to use nextID and check if not in max (instead of in addNewJob) so we can use it here
-				globals->fgJob = initJob(_line, FOREGROUND, command->pid); 
+				globals->fgJob = initJob(_line, FOREGROUND, commandPID(command)); 
 
 				end_status = run_cmd(command);
 			}

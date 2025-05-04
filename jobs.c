@@ -50,7 +50,7 @@ int addNewJob(char* name, jobStatus status, pid_t pid){
         return -1;
     }
     unsigned int ID = jobList->nextID;
-    job_t new_job = initJob(ID, name, status, pid);
+    job_t new_job = initJob(name, status, pid);
     jobList->jobs[ID] = new_job;
     if(++jobList->count != JOBS_NUM_MAX) {
         while (jobList->jobs[ID])
@@ -115,7 +115,7 @@ void printJobList(){
         if (jobList->jobs[i]) {
             job_t curr_job = jobList->jobs[i];
             int time_elapsed_sec = (int)difftime(time(NULL), curr_job->creationTime);
-            printf("[%d] %s: %d %d secs%s\n", curr_job->ID, curr_job->cmd, curr_job->pid, time_elapsed_sec,(curr_job->status == STOPPED)? " stopped" : ""); //ASSUMPTION - if job isn't stopped we dont print the space after "secs"
+            printf("[%d] %s: %d %d secs%s\n", i, curr_job->cmd, curr_job->pid, time_elapsed_sec,(curr_job->status == STOPPED)? " stopped" : ""); //ASSUMPTION - if job isn't stopped we dont print the space after "secs"
         }
     }
 }
