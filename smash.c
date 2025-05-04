@@ -8,6 +8,8 @@
 #include "commands.h"
 #include "signals.h"
 #include "jobs.h"
+#include <setjmp.h>
+
 /*=============================================================================
 * classes/structs declarations
 =============================================================================*/
@@ -40,17 +42,22 @@ int main(int argc, char* argv[])
 {
 	// Gloabls
 	globals = malloc(sizeof(struct globals));
+	if (!globals) {
+		perror("Failed to allocate memory for globals");
+		exit(EXIT_FAILURE);
+	}
 	globals->jobList = initJobList();
-	char _cmd[CMD_LENGTH_MAX];
+	char _cmd[CMD_LENGTH_MAX+1];
 	while(1) { 
-		setjmp(env_buf); // set the environment for longjmp
+		sigsetjmp(env_buf, 1); // set the environment for longjmp
+		setupSignalHandlers(); // setup signal handlers
 		printf("smash > ");
 		fgets(_line, CMD_LENGTH_MAX, stdin);
 		strcpy(_cmd, _line);
-		
 		//check for finished jobs
 		removeFinishedJobs();
-		
+		printf("hi\n");
+
 		//parse cmd
 		cmd *command = NULL;
 		ParsingError parse_status = parseCmd(_line, &command);
@@ -59,9 +66,6 @@ int main(int argc, char* argv[])
 			continue;
 		}
 		
-		// printf("\nWASTED\n\n");
-		printf("\nparse_status - %d\n\n", parse_status);	
-		printf("\ncommand->status - %d\n\n", command->status);	
 		//check for status and execute (execv + args) / fork and add to jobList
 		CommandResult end_status = SMASH_NULL;
 		if (command->status == FOREGROUND){
@@ -81,10 +85,8 @@ int main(int argc, char* argv[])
 			} else { // parent process
 				addNewJob(_line, BACKGROUND, commandPID(command)); 
 				// ASSUMPTION - are we dropping jobs/commands if list is full?
-				// YUVAL - We need an indication at least to destroy the job
 			}
 		}
-
 		//initialize buffers for next command
 		_line[0] = '\0';
 		_cmd[0] = '\0';
