@@ -1,11 +1,10 @@
 // jobs.c
 #include "jobs.h"
 
-job_t initJob(int ID, char* cmd, jobStatus status, pid_t pid){
+job_t initJob(char* cmd, jobStatus status, pid_t pid){
     job_t job = MALLOC_VALIDATED(struct job, sizeof(struct job));
     job->cmd = MALLOC_VALIDATED(char, strlen(cmd) + 1);
     strcpy(job->cmd, cmd);
-    job->ID = ID;
     job->status = status;
     job->creationTime = time(NULL);
     job->pid = pid;
@@ -44,11 +43,11 @@ void destroyJobList() {
     free(jobList);
 }
 
-void addNewJob(char* name, jobStatus status, pid_t pid){
+int addNewJob(char* name, jobStatus status, pid_t pid){
     jobList_t jobList = globals->jobList;
     if (jobList->count == JOBS_NUM_MAX) {
         fprintf(stderr, "Job list is full\n");
-        return;
+        return -1;
     }
     unsigned int ID = jobList->nextID;
     job_t new_job = initJob(ID, name, status, pid);
@@ -58,13 +57,14 @@ void addNewJob(char* name, jobStatus status, pid_t pid){
             ID++;
         jobList->nextID = ID;
     }
+    return 0;
 }
 
-void addExistingJob(job_t job){
+int addExistingJob(job_t job){
     jobList_t jobList = globals->jobList;
     if (jobList->count == JOBS_NUM_MAX) {
         fprintf(stderr, "Job list is full\n");
-        return;
+        return -1;
     }
     unsigned int ID = jobList->nextID;
     jobList->jobs[ID] = job;
@@ -73,6 +73,7 @@ void addExistingJob(job_t job){
             ID++;
         jobList->nextID = ID;
     }
+    return 0;
 }
 
 void removeJob(unsigned int ID){
@@ -127,14 +128,14 @@ job_t jobLookup(unsigned int ID){
     return NULL;
 }
 
-job_t jobPIDLookup(unsigned int PID){
+int jobPIDLookup(unsigned int PID){
     jobList_t jobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
         if (jobList->jobs[i] && jobList->jobs[i]->pid == PID) {
-            return jobList->jobs[i];
+            return i;
         }
     }
-    return NULL;
+    return -1;
 }
 
 int maxAvailableJobID(){

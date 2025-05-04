@@ -4,7 +4,7 @@
 void handleSIGINT(int sig) {
     // catch SIGINT (Ctrl+C) signal
     printf("\nCaught SIGINT (Ctrl+C). Signal number: %d\n", sig);
-    if (globals->smashStatus == FG_EXEC) {
+    if (globals->fgJob) {
         kill(globals->fgJob->pid, SIGTERM);
     }
     longjmp(env, 1); // jump back to the point where setjmp was called
@@ -12,24 +12,12 @@ void handleSIGINT(int sig) {
 
 void handleSIGTSTP(int sig) {
     printf("\nCaught SIGTSTP (Ctrl+Z). Signal number: %d\n", sig);
-     if (globals->smashStatus == FG_EXEC){
+    if (globals->fgJob){
         kill(globals->fgJob->pid, SIGSTOP);
         changeStatus(globals->fgJob, STOPPED); // change the status of the job to STOPPED
+        globals->fgJob->pid = getpid(); // update the pid of the job
         addExistingJob(globals->fgJob);
-
-    }
-    else if (globals->smashStatus == FG) {
-        int pid = fork();
-        if (pid == 0) { // child process
-            raise(SIGSTOP); // send SIGSTOP to the foreground process
-            return;
-        } else { // parent process
-            changeStatus(globals->fgJob, STOPPED); // change the status of the job to STOPPED
-            addExistingJob(globals->fgJob);
-            longjmp(env, 1); // jump back to the point where setjmp was called
-        }
-    }
-    else{
+        globals->fgJob = NULL; // clear the foreground job
         longjmp(env, 1);
     }
 }

@@ -133,7 +133,7 @@ int pwd(cmd *cmd){
 		return SMASH_FAIL;
 	} else { // running in job
 		// use global pointers struct and free previously allocated memory if exists
-		int id = jobPIDLookup(getpid())->ID;
+		int id = jobPIDLookup(getpid());
 		if (!globals->pwd_pointers[id]) free(globals->pwd_pointers[id]);
 
 		globals->pwd_pointers[id] = getcwd(NULL, 0); 
