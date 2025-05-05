@@ -101,11 +101,14 @@ void removeFinishedJobs(){
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
         if (globJobList->jobs[i] && globJobList->jobs[i]->status == BACKGROUND){
             int wait_status;
-            pid_t result = waitpid(globJobList->jobs[i]->pid, &wait_status, WNOHANG); //WHOHANG flag to avoid blocking
+            pid_t result = waitpid(globJobList->jobs[i]->pid, &wait_status, WNOHANG); //WNOHANG flag to avoid blocking
             if (result == -1) // error occurred
                 perror("waitpid failed");
-            else if (result > 0) // job finished
+            else if (result > 0 && WIFEXITED(wait_status)){
+                printf("entered if\n");
                 removeJob(i);
+
+            } // job finished
             //else - job still running, do nothing
         }
     }

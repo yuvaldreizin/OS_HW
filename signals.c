@@ -3,22 +3,26 @@
 
 void handleSIGINT(int sig) {
     // catch SIGINT (Ctrl+C) signal
-    printf("\nCaught SIGINT (Ctrl+C). Signal number: %d\n", sig);
-    if (globals->fgJob) {
-        kill(globals->fgJob->pid, SIGTERM);
+    if(getpid() == globals->smash_pid) {
+        longjmp(env_buf, 1); // jump back to the point where setjmp was called
+    } else {
+        destroyJob(globals->fgJob); // destroy the foreground job
+        globals->fgJob = NULL; // clear the foreground job
+        exit(0);
     }
-    longjmp(env_buf, 1); // jump back to the point where setjmp was called
 }
 
 void handleSIGTSTP(int sig) {
-    printf("\nCaught SIGTSTP (Ctrl+Z). Signal number: %d\n", sig);
-    if (globals->fgJob){
-        kill(globals->fgJob->pid, SIGSTOP);
-        changeStatus(globals->fgJob, STOPPED); // change the status of the job to STOPPED
-        globals->fgJob->pid = getpid(); // update the pid of the job
-        addExistingJob(globals->fgJob);
+    if(getpid() == globals->smash_pid) {
+        job_t curr_job = globals->fgJob;
+        changeStatus(curr_job, STOPPED); // change the status of the job to STOPPED
+        addExistingJob(curr_job);
         globals->fgJob = NULL; // clear the foreground job
-        longjmp(env_buf, 1);
+        kill(curr_job->pid, SIGSTOP); // send SIGSTOP to the job
+        longjmp(env_buf, 1); // jump back to the point where setjmp was called
+    }
+    else {
+        printf("ERORORROROROROROROROROROROORORORORORORROORROOROOROROOROROORORORORORROOROROROOROROROOROR");
     }
 }
 
