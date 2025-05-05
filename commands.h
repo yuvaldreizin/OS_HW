@@ -16,7 +16,8 @@
 #define ARGS_NUM_MAX 20
 #define JOBS_NUM_MAX 100
 #define DIFF_LINE_SIZE 500
-
+#define FIRST_ARG 1
+#define SECOND_ARG 2
 
 /**
  * @enum environment
