@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
 				run_cmd(curr_cmd);
 				destroyCmd(curr_cmd); 
 				return 0;
-			} else { // parent process
+			} else if (new_pid > 0){ // parent process
 				addNewJob(_line, BACKGROUND, new_pid); 
 				// ASSUMPTION - are we dropping jobs/commands if list is full?
 			}
