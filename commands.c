@@ -37,8 +37,8 @@ int parseCmd(char* line, cmd_t **curr_cmd){
 	
 	char* args[ARGS_NUM_MAX];
 	int nargs = 0;
-	// args[0] = recieved_cmd; //first token before spaces/tabs/newlines should be command name
-	for(int i = 0; i < ARGS_NUM_MAX; i++)
+	args[0] = recieved_cmd; //first token before spaces/tabs/newlines should be command name
+	for(int i = 1; i < ARGS_NUM_MAX; i++)
 	{
 		args[i] = strtok(NULL, delimiters); //first arg NULL -> keep tokenizing from previous call
 		if(!args[i])
@@ -49,17 +49,18 @@ int parseCmd(char* line, cmd_t **curr_cmd){
 	*curr_cmd = MALLOC_VALIDATED(cmd_t, sizeof(cmd_t));
 	(*curr_cmd)->input = MALLOC_VALIDATED(char, (strlen(recieved_cmd) + 1));
 	strcpy((*curr_cmd)->input, recieved_cmd);
-	if (strcmp(args[nargs-1],"&") == 0){
+	if (strcmp(args[nargs],"&") == 0){
 		(*curr_cmd)->cmdStatus = BACKGROUND;
 		nargs--;	
 	} else (*curr_cmd)->cmdStatus = FOREGROUND;
-	(*curr_cmd)->env = (isInternalCommand((*curr_cmd)) >= 0) ? INTERNAL : EXTERNAL;
 	(*curr_cmd)->args = MALLOC_VALIDATED(char*, nargs * sizeof(char*));
-	for (int i = 0; i < nargs; i++){
+	for (int i = 0; i <= nargs; i++){ // include the command name
 		(*curr_cmd)->args[i] = MALLOC_VALIDATED(char, (strlen(args[i]) + 1));
 		strcpy((*curr_cmd)->args[i], args[i]);
 	}
 	(*curr_cmd)->nargs = nargs;
+	// (*curr_cmd)->cmdStatus = (strcmp(args[nargs],"&") == 0) ? BACKGROUND : FOREGROUND;
+	(*curr_cmd)->env = (isInternalCommand((*curr_cmd)) >= 0) ? INTERNAL : EXTERNAL;
 
 	return VALID_COMMAND; 
 }
@@ -175,7 +176,9 @@ int cd(cmd_t *curr_cmd){
 	if (args_num_error(curr_cmd, 1) == INVALID_COMMAND){
 		return SMASH_FAIL;
 	}
-	printf("cd: here\n");
+	if (!globals->cur_path) { // set path the first time cd is called
+		globals->cur_path = getcwd(NULL, 0);
+	}
 	if (strcmp(curr_cmd->args[FIRST_ARG], "-") == 0){ // case: "-" (go to last path)
 		if(!globals->last_path){
 			printf("smash error: cd: old pwd not set\n");
@@ -186,7 +189,7 @@ int cd(cmd_t *curr_cmd){
 				globals->cur_path = NULL;
 			}
 			globals->cur_path = globals->last_path;
-			globals->last_path = getcwd(NULL, 0); 
+			globals->last_path = getcwd(NULL, 0);
 			chdir(globals->cur_path);
 			return SMASH_SUCCESS;
 		}
@@ -204,6 +207,12 @@ int cd(cmd_t *curr_cmd){
 				return SMASH_FAIL;
 			}
 		} else { // good chdir
+			if (globals->last_path) {
+				free(globals->last_path);
+				globals->last_path = NULL;
+			}
+			globals->last_path = globals->cur_path;
+			globals->cur_path = getcwd(NULL, 0);
 			return SMASH_SUCCESS;
 		}
 	}
@@ -218,6 +227,7 @@ int jobs(cmd_t *curr_cmd){
 	if (args_num_error(curr_cmd, 0) == INVALID_COMMAND){
 		return SMASH_FAIL;
 	}
+	printf("smash: jobs count: %d\n", globals->jobList->count);
 	printJobList(globals->jobList);
 	return SMASH_SUCCESS;
 }
@@ -324,6 +334,7 @@ int quit(cmd_t *curr_cmd){
 		}
 		// handle quit with kill
 		for (int i = 0; i < JOBS_NUM_MAX; i++){ 
+			if (globals->jobList->count == 0) break; // no jobs in the list
 			if (jobLookup(i)){
 				job_t curr_job = globals->jobList->jobs[i];
 				printf("[%d] %s - ", i, curr_job->user_input);
@@ -367,12 +378,12 @@ int diff(cmd_t *curr_cmd){
 	if (globals->file2[id]) fclose(globals->file2[id]);
 	globals->file1[id] = fopen(curr_cmd->args[FIRST_ARG], "r");
 	if (!globals->file1[id]){
-		perrorSmash("diff", "failed to open file 1");
+		perrorSmash("diff", "failed to open file 1\n");
 		return SMASH_FAIL;
 	}
 	globals->file2[id] = fopen(curr_cmd->args[SECOND_ARG], "r");
 	if (!globals->file2[id]){
-		perrorSmash("diff", "failed to open file 2");
+		perrorSmash("diff", "failed to open file 2\n");
 		fclose(globals->file1[id]);
 		return SMASH_FAIL;
 	}
@@ -387,7 +398,7 @@ int diff(cmd_t *curr_cmd){
 			} else if (line1[0] && line2[0] && strcmp(line1, line2)){ // diff, last line till EOF
 				break;
 			} else if (feof(globals->file1[id]) && feof(globals->file2[id])){
-				printf("0");
+				printf("0\n");
 				fclose(globals->file1[id]);
 				fclose(globals->file2[id]);
 				globals->file1[id] = NULL;
@@ -399,7 +410,7 @@ int diff(cmd_t *curr_cmd){
 			break;
 		} 
 	}
-	printf("1");
+	printf("1\n");
 	fclose(globals->file1[id]);
 	fclose(globals->file2[id]);
 	globals->file1[id] = NULL;
@@ -421,6 +432,9 @@ int run_ext_cmd(cmd_t *curr_cmd){
 	}
 	int id = fork();
 	if (id==0){
+		if (curr_cmd->cmdStatus == FOREGROUND){
+			globals->fgJob->pid = getpid();
+		}
 		int ret = execv(curr_cmd->input, curr_cmd->args);
 		if (ret == -1) {
 			printf("smash error: external: invalid command\n");
