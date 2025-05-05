@@ -8,6 +8,8 @@
 #include "commands.h"
 #include "signals.h"
 #include "jobs.h"
+#include <setjmp.h>
+
 /*=============================================================================
 * classes/structs declarations
 =============================================================================*/
@@ -23,7 +25,7 @@ char _line[CMD_LENGTH_MAX];
 globals_t globals;
 
 void destroy_globals() {
-	destroyJobList(globals->jobList);
+	destroyJobList();
 	if ((globals->fgJob)) destroyJob(globals->fgJob);
 	for (int i = 0; i < JOBS_NUM_MAX; i++){
 		if (globals->pwd_pointers[i]) free(globals->pwd_pointers[i]);
@@ -35,6 +37,7 @@ void destroy_globals() {
 
 void init_globals() {
 	globals = malloc(sizeof(struct globals));
+	if (!globals) ERROR_EXIT("malloc");
 	globals->jobList = initJobList();
 	globals->last_path = NULL;
 	globals->cur_path = NULL;
@@ -55,17 +58,18 @@ int main(int argc, char* argv[])
 	init_globals();
 	char _cmd[CMD_LENGTH_MAX];
 	while(1) { 
-		setjmp(env_buf); // set the environment for longjmp
+		sigsetjmp(env_buf, 1); // set the environment for longjmp
+		setupSignalHandlers(); // setup signal handlers
 		printf("smash > ");
 		fgets(_line, CMD_LENGTH_MAX, stdin);
 		strcpy(_cmd, _line);
-		
 		//check for finished jobs
 		removeFinishedJobs();
-		
+		printf("hi\n");
+
 		//parse cmd
-		cmd *command = NULL;
-		ParsingError parse_status = parseCmd(_line, &command);
+		cmd_t *curr_cmd = NULL;
+		ParsingError parse_status = parseCmd(_line, &curr_cmd);
 		if (parse_status == INVALID_COMMAND) {
 			printf("smash error: invalid command\n");	// ASSUMPTION - basing on ext-command guidlins
 			continue;
@@ -73,27 +77,27 @@ int main(int argc, char* argv[])
 		
 		//check for status and execute (execv + args) / fork and add to jobList
 		CommandResult end_status = SMASH_NULL;
-		if (command->status == FOREGROUND){
-			if (command->env == EXTERNAL){
+		if (curr_cmd->cmdStatus == FOREGROUND){
+			if (curr_cmd->env == EXTERNAL){
 				// create fgJob in case of SIGSTOP
-				globals->fgJob = initJob(_line, FOREGROUND, getpid()); 
-				end_status = run_cmd(command);
+				globals->fgJob = initJob(_line, FOREGROUND, 0); 
+				end_status = run_cmd(curr_cmd);
 			} else { // INTERNAL
-				end_status = run_cmd(command);
+				end_status = run_cmd(curr_cmd);
 			}
 		} else { // BACKGROUND
-			int pid = fork();
-			if (pid == 0) { // child process
-				end_status = run_cmd(command);
+			int new_pid = fork();
+			if (new_pid == 0) { // child process
+				end_status = run_cmd(curr_cmd);
 			} else { // parent process
-				addNewJob(_line, BACKGROUND, pid); 
+				addNewJob(_line, BACKGROUND, new_pid); 
+				// ASSUMPTION - are we dropping jobs/commands if list is full?
 			}
 		}
-		
 		//initialize buffers for next command
 		_line[0] = '\0';
 		_cmd[0] = '\0';
-		destroyCmd(command);
+		destroyCmd(curr_cmd);
 		if (end_status == SMASH_QUIT) {
 			break; 
 		}

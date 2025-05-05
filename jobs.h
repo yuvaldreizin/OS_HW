@@ -26,7 +26,7 @@ typedef enum {
  * @brief Represents a single job.
  */
 struct job {
-    char *cmd;               /**< Command associated with the job. */
+    char *user_input;               /**< Command associated with the job. */
     jobStatus status;        /**< Current status of the job. */
     time_t creationTime;     /**< Time when the job was created. */
     unsigned int pid;        /**< Process ID of the job. */
@@ -46,7 +46,7 @@ struct jobList {
 
 typedef struct jobList* jobList_t;
 
-struct globals {
+struct global_params {
     jobList_t jobList;
     char* last_path;
     char* cur_path;
@@ -56,7 +56,7 @@ struct globals {
 	FILE *file1[JOBS_NUM_MAX];
 	FILE *file2[JOBS_NUM_MAX];
 };
-typedef struct globals* globals_t;
+typedef struct global_params* globals_t;
 extern globals_t globals;
 
 /*=============================================================================
@@ -73,14 +73,14 @@ extern globals_t globals;
  * @param pid The process ID of the job.
  * @return A pointer to the initialized job.
  */
-job_t initJob(char* cmd, jobStatus status, pid_t pid);
+job_t initJob(char* curr_cmd, jobStatus curr_status, pid_t curr_pid);
 
 /**
  * @brief Destroys a job and frees its resources.
  * 
  * @param job The job to destroy.
  */
-void destroyJob(job_t job);
+void destroyJob(job_t curr_job);
 
 /**
  * @brief Gets the status of a job.
@@ -88,7 +88,7 @@ void destroyJob(job_t job);
  * @param job The job whose status is to be retrieved.
  * @return The status of the job.
  */
-jobStatus getStatus(job_t job);
+jobStatus getStatus(job_t curr_job);
 
 /**
  * @brief Changes the status of a job.
@@ -96,7 +96,7 @@ jobStatus getStatus(job_t job);
  * @param job The job whose status is to be changed.
  * @param new The new status to set.
  */
-void changeStatus(job_t job, jobStatus new);
+void changeStatus(job_t curr_job, jobStatus new);
 
 /*======================== Job List Commands ========================*/
 
@@ -120,7 +120,7 @@ void destroyJobList();
  * @param pid The process ID of the job.
  * @return 0 on success, -1 on failure
  */
-int addNewJob(char* name, jobStatus status, pid_t pid);
+int addNewJob(char* name, jobStatus curr_status, pid_t curr_pid);
 
 /**
  * @brief Adds an existing job to the job list.
@@ -128,7 +128,7 @@ int addNewJob(char* name, jobStatus status, pid_t pid);
  * @param job The job to add to the list.
  * @return 0 on success, -1 on failure
  */
-int addExistingJob(job_t job);
+int addExistingJob(job_t curr_job);
 
 
 /**

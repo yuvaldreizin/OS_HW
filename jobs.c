@@ -1,105 +1,107 @@
 // jobs.c
 #include "jobs.h"
 
-job_t initJob(char* cmd, jobStatus status, pid_t pid){
-    job_t job = MALLOC_VALIDATED(struct job, sizeof(struct job));
-    job->cmd = MALLOC_VALIDATED(char, strlen(cmd) + 1);
-    strcpy(job->cmd, cmd);
-    job->status = status;
-    job->creationTime = time(NULL);
-    job->pid = pid;
-    return job;
+job_t initJob(char* curr_cmd, jobStatus curr_status, pid_t curr_pid){
+    job_t new_job = MALLOC_VALIDATED(struct job, sizeof(struct job));
+    new_job->user_input = MALLOC_VALIDATED(char, strlen(curr_cmd) + 1);
+    strcpy(new_job->user_input, curr_cmd);
+    new_job->status = curr_status;
+    new_job->creationTime = time(NULL);
+    new_job->pid = curr_pid;
+    return new_job;
 }
 
-void destroyJob(job_t job){
-    if (job) {
-        free(job->cmd);
-        free(job);
+void destroyJob(job_t curr_job){
+    if (curr_job) {
+        free(curr_job->user_input);
+        free(curr_job);
     }
 }
 
 jobList_t initJobList(){
-    jobList_t jobList = malloc(sizeof(struct jobList));
-    if (!jobList) {
+    jobList_t newJobList = malloc(sizeof(struct jobList));
+    if (!newJobList) {
         perror("Failed to initialize job list");
         exit(EXIT_FAILURE);
     }
-    jobList->count = 0;
-    jobList->nextID = 0;
+    newJobList->count = 0;
+    newJobList->nextID = 0;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
-        jobList->jobs[i] = NULL;
+        newJobList->jobs[i] = NULL;
     }
-    return jobList;
+    return newJobList;
 }
 
 void destroyJobList() {
-    jobList_t jobList = globals->jobList;
-    for (int i = 0; i < JOBS_NUM_MAX && jobList->count ; i++) {
-        if (jobList->jobs[i]) {
-            destroyJob(jobList->jobs[i]);
-            jobList->count--;
+    jobList_t globJobList = globals->jobList;
+    for (int i = 0; i < JOBS_NUM_MAX && globJobList->count ; i++) {
+        if (globJobList->jobs[i]) {
+            destroyJob(globJobList->jobs[i]);
+            globJobList->count--;
         }
     }
-    free(jobList);
+    free(globJobList);
 }
 
-int addNewJob(char* name, jobStatus status, pid_t pid){
-    jobList_t jobList = globals->jobList;
-    if (jobList->count == JOBS_NUM_MAX) {
+int addNewJob(char* name, jobStatus curr_status, pid_t curr_pid){
+    jobList_t globJobList = globals->jobList;
+    if (globJobList->count == JOBS_NUM_MAX) {
         fprintf(stderr, "Job list is full\n");
         return -1;
     }
-    unsigned int ID = jobList->nextID;
-    job_t new_job = initJob(name, status, pid);
-    jobList->jobs[ID] = new_job;
-    if(++jobList->count != JOBS_NUM_MAX) {
-        while (jobList->jobs[ID])
+    unsigned int ID = globJobList->nextID;
+    job_t new_job = initJob(name, curr_status, curr_pid);
+    globJobList->jobs[ID] = new_job;
+    if(++globJobList->count != JOBS_NUM_MAX) {
+        while(globJobList->jobs[ID]){
             ID++;
-        jobList->nextID = ID;
+        }
+        globJobList->nextID = ID;
     }
     return 0;
 }
 
-int addExistingJob(job_t job){
-    jobList_t jobList = globals->jobList;
-    if (jobList->count == JOBS_NUM_MAX) {
+int addExistingJob(job_t curr_job){
+    jobList_t globJobList = globals->jobList;
+    if (globJobList->count == JOBS_NUM_MAX) {
         fprintf(stderr, "Job list is full\n");
         return -1;
     }
-    unsigned int ID = jobList->nextID;
-    jobList->jobs[ID] = job;
-    if(++jobList->count != JOBS_NUM_MAX) {
-        while (jobList->jobs[ID])
+    unsigned int ID = globJobList->nextID;
+    globJobList->jobs[ID] = curr_job;
+    if(++globJobList->count != JOBS_NUM_MAX) {
+        while (globJobList->jobs[ID]){
             ID++;
-        jobList->nextID = ID;
+        }
+        globJobList->nextID = ID;
     }
     return 0;
 }
 
 void removeJob(unsigned int ID){
-    jobList_t jobList = globals->jobList;
-    destroyJob(jobList->jobs[ID]);
-    jobList->jobs[ID] = NULL;
-    jobList->count--;
-    if(ID < jobList->nextID) {
-        jobList->nextID = ID;
+    jobList_t globJobList = globals->jobList;
+    destroyJob(globJobList->jobs[ID]);
+    globJobList->jobs[ID] = NULL;
+    globJobList->count--;
+    if(ID < globJobList->nextID) {
+        globJobList->nextID = ID;
     }
 }
 
-jobStatus getStatus(job_t job){
-    return job->status;
+jobStatus getStatus(job_t curr_job){
+    return curr_job->status;
 }
 
-void changeStatus(job_t job, jobStatus new){
-    job->status = new;
+void changeStatus(job_t curr_job, jobStatus new){
+    curr_job->status = new;
 }
 
-void removeFinishedJobs(){ //AMIR a function that removes finished jobs from the job list. need to activate it before any commant 
-    jobList_t jobList = globals->jobList;
+void removeFinishedJobs(){
+    jobList_t globJobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
-        if (jobList->jobs[i] && jobList->jobs[i]->status == BACKGROUND){
-            int status;
-            pid_t result = waitpid(jobList->jobs[i]->pid, &status, WNOHANG); //WHOHANG flag to avoid blocking
+        if (globJobList->jobs[i] && globJobList->jobs[i]->status == BACKGROUND){
+            int wait_status;
+            pid_t result = waitpid(globJobList->jobs[i]->pid, &wait_status, WNOHANG); //WHOHANG flag to avoid blocking
             if (result == -1) // error occurred
                 perror("waitpid failed");
             else if (result > 0) // job finished
@@ -110,28 +112,28 @@ void removeFinishedJobs(){ //AMIR a function that removes finished jobs from the
 }
 
 void printJobList(){
-    jobList_t jobList = globals->jobList;
+    jobList_t globJobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
-        if (jobList->jobs[i]) {
-            job_t curr_job = jobList->jobs[i];
+        if (globJobList->jobs[i]) {
+            job_t curr_job = globJobList->jobs[i];
             int time_elapsed_sec = (int)difftime(time(NULL), curr_job->creationTime);
-            printf("[%d] %s: %d %d secs%s\n", i, curr_job->cmd, curr_job->pid, time_elapsed_sec,(curr_job->status == STOPPED)? " stopped" : ""); //ASSUMPTION - if job isn't stopped we dont print the space after "secs"
+            printf("[%d] %s: %d %d secs%s\n", i, curr_job->user_input, curr_job->pid, time_elapsed_sec,(curr_job->status == STOPPED)? " stopped" : ""); //ASSUMPTION - if job isn't stopped we dont print the space after "secs"
         }
     }
 }
 
 job_t jobLookup(unsigned int ID){
-    jobList_t jobList = globals->jobList;
+    jobList_t globJobList = globals->jobList;
     if (ID < JOBS_NUM_MAX) {
-        return jobList->jobs[ID];
+        return globJobList->jobs[ID];
     }
     return NULL;
 }
 
 int jobPIDLookup(unsigned int PID){
-    jobList_t jobList = globals->jobList;
+    jobList_t globJobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
-        if (jobList->jobs[i] && jobList->jobs[i]->pid == PID) {
+        if (globJobList->jobs[i] && globJobList->jobs[i]->pid == PID) {
             return i;
         }
     }
