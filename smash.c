@@ -36,7 +36,7 @@ void destroy_globals() {
 }
 
 void init_globals() {
-	globals = malloc(sizeof(struct globals));
+	globals = (globals_t)malloc(sizeof(struct global_params));
 	if (!globals) ERROR_EXIT("malloc");
 	globals->jobList = initJobList();
 	globals->last_path = NULL;
@@ -65,13 +65,12 @@ int main(int argc, char* argv[])
 		strcpy(_cmd, _line);
 		//check for finished jobs
 		removeFinishedJobs();
-		printf("hi\n");
 
 		//parse cmd
 		cmd_t *curr_cmd = NULL;
 		ParsingError parse_status = parseCmd(_line, &curr_cmd);
 		if (parse_status == INVALID_COMMAND) {
-			printf("smash error: invalid command\n");	// ASSUMPTION - basing on ext-command guidlins
+			// printf("smash error: invalid command\n");	// ASSUMPTION - basing on ext-command guidlins
 			continue;
 		}
 		

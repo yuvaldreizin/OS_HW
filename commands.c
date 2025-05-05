@@ -48,7 +48,7 @@ int parseCmd(char* line, cmd_t **curr_cmd){
 
 	*curr_cmd = MALLOC_VALIDATED(cmd_t, sizeof(cmd_t));
 	(*curr_cmd)->input = MALLOC_VALIDATED(char, (strlen(recieved_cmd) + 1));
-	strcpy((*curr_cmd)->command, recieved_cmd);
+	strcpy((*curr_cmd)->input, recieved_cmd);
 	int args_byte_size = 0;	
 	for (int i = 0; i < nargs; i++){
 		args_byte_size += strlen(args[i]) + 1;
@@ -154,11 +154,13 @@ int pwd(cmd_t *curr_cmd){
 	} else { // running in job
 		// use global pointers struct and free previously allocated memory if exists
 		int id = jobPIDLookup(getpid());
-		if (!globals->pwd_pointers[id]) free(globals->pwd_pointers[id]);
+		if (globals->pwd_pointers[id]) free(globals->pwd_pointers[id]);
 
 		globals->pwd_pointers[id] = getcwd(NULL, 0); 
-		if (globals->pwd_pointers[id] != NULL){
+		if (globals->pwd_pointers[id]){
 			printf("%s\n", globals->pwd_pointers[id]);
+			free(globals->pwd_pointers[id]);
+			globals->pwd_pointers[id] = NULL;
 			return SMASH_SUCCESS;
 		} 
 		perror("smash error: pwd: getcwd failed");
@@ -175,14 +177,17 @@ int cd(cmd_t *curr_cmd){
 			printf("smash error: cd: old pwd not set\n");
 			return SMASH_FAIL;
 		} else {
-			free(globals->cur_path);
+			if (globals->cur_path) {
+				free(globals->cur_path);
+				globals->cur_path = NULL;
+			}
 			globals->cur_path = globals->last_path;
 			globals->last_path = getcwd(NULL, 0); 
 			chdir(globals->cur_path);
 			return SMASH_SUCCESS;
 		}
 	} else { // case: general cd (including ".." as valid chdir argument)
-		int res = chdir(curr_cmd->args[1]);
+		int res = chdir(curr_cmd->args[0]); // use first arg
 		if (res == -1){
 			if (errno == ENOENT){
 				printf("smash error: cd: target directory does not exist\n");
@@ -404,6 +409,7 @@ int diff(cmd_t *curr_cmd){
  * @return End status - success or failure
  */
 int run_ext_cmd(cmd_t *curr_cmd){
+	if (!strcmp(curr_cmd->input, "\n")) return SMASH_SUCCESS;
 	int is_file = access(curr_cmd->input, F_OK);
 	if (is_file == -1){ // file not found
 		printf("smash error: external: cannot find program\n");
