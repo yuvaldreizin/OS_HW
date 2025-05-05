@@ -29,7 +29,7 @@ void perrorSmash(const char* cmd, const char* msg){
  * recieve a string and an empty cmd pointer
  * return a filled cmd struct, including memory allocation
  */
-int parseCmd(char* line, cmd **command){
+int parseCmd(char* line, cmd_t **curr_cmd){
 	char* delimiters = " \t\n"; //parsing should be done by spaces, tabs or newlines
 	char* recieved_cmd = strtok(line, delimiters); //read strtok documentation - parses string by delimiters
 	if(!recieved_cmd)
@@ -46,17 +46,17 @@ int parseCmd(char* line, cmd **command){
 		nargs++;
 	}
 
-	*command = MALLOC_VALIDATED(cmd, sizeof(cmd));
-	(*command)->command = MALLOC_VALIDATED(char, (strlen(recieved_cmd) + 1));
+	*curr_cmd = MALLOC_VALIDATED(cmd_t, sizeof(cmd_t));
+	(*curr_cmd)->input = MALLOC_VALIDATED(char, (strlen(recieved_cmd) + 1));
 	int args_byte_size = 0;	
 	for (int i = 0; i < nargs; i++){
 		args_byte_size += strlen(args[i]) + 1;
 	}
-	(*command)->args = MALLOC_VALIDATED(char*, args_byte_size);
-	(*command)->args = args;
-	(*command)->nargs = nargs;
-	(*command)->status = strcmp(args[nargs],"&") == 0 ? BACKGROUND : FOREGROUND ;
-	(*command)->env = (isInternalCommand((*command)) >= 0) ? INTERNAL : EXTERNAL;
+	(*curr_cmd)->args = MALLOC_VALIDATED(char*, args_byte_size);
+	(*curr_cmd)->args = args;
+	(*curr_cmd)->nargs = nargs;
+	(*curr_cmd)->cmdStatus = strcmp(args[nargs],"&") == 0 ? BACKGROUND : FOREGROUND ;
+	(*curr_cmd)->env = (isInternalCommand((*curr_cmd)) >= 0) ? INTERNAL : EXTERNAL;
 
 	return VALID_COMMAND; 
 }
@@ -64,13 +64,13 @@ int parseCmd(char* line, cmd **command){
 /**
  * @brief Frees the memory of a command structure.
  */
-void destroyCmd(cmd* cmd){
-	if (cmd){
-		if(cmd->args)
-			free(cmd->args);
-		if(cmd->command)
-			free(cmd->command);
-		free(cmd);
+void destroyCmd(cmd_t* desCmd){
+	if (desCmd){
+		if(desCmd->args)
+			free(desCmd->args);
+		if(desCmd->input)
+			free(desCmd->input);
+		free(desCmd);
 	}
 }
 
@@ -78,10 +78,10 @@ void destroyCmd(cmd* cmd){
  * @brief Checks if a given command is an internal command.
  * @return The index of the internal command if found, or -1 if the command is external.
  */
-int isInternalCommand(cmd *cmd){
+int isInternalCommand(cmd_t *curr_cmd){
 	//check if command is internal or external
 	for (int i = 0; i < NUM_INTERNAL_COMMANDS; i++){
-		if (strcmp(cmd->command, commands_list[i].command) == 0)
+		if (strcmp(curr_cmd->input, commands_list[i].command) == 0)
 			return i; 
 	}
 	return -1; // External command
@@ -91,13 +91,13 @@ int isInternalCommand(cmd *cmd){
  * @brief run the given command, handle both internal and external commands
  * @return End status - success or failure
  */
-int run_cmd(cmd *cmd){
-	if (!cmd) return SMASH_FAIL;
-	if (cmd->env == INTERNAL){
-		int index = isInternalCommand(cmd); // get index
-		return commands_list[index].func(cmd); 
+int run_cmd(cmd_t *curr_cmd){
+	if (!curr_cmd) return SMASH_FAIL;
+	if (curr_cmd->env == INTERNAL){
+		int index = isInternalCommand(curr_cmd); // get index
+		return commands_list[index].func(curr_cmd); 
 	} else { // EXTERNAL
-		return run_ext_cmd(cmd);
+		return run_ext_cmd(curr_cmd);
 	}
 }
 
@@ -105,9 +105,9 @@ int run_cmd(cmd *cmd){
  * @brief Check if the number of arguments is as expected. Print error if not.
  * @return 0 if the number of arguments is correct, -1 otherwise.
  */
-int args_num_error(cmd *cmd, int expected_num){
-    if (cmd->nargs != expected_num){
-        printf("smash error: %s: expected %d arguments\n", cmd->command, expected_num);
+int args_num_error(cmd_t *curr_cmd, int expected_num){
+    if (curr_cmd->nargs != expected_num){
+        printf("smash error: %s: expected %d arguments\n", curr_cmd->input, expected_num);
 		return INVALID_COMMAND;
 	}
     return VALID_COMMAND;
@@ -117,11 +117,11 @@ int args_num_error(cmd *cmd, int expected_num){
  * @brief print smash pid
  * @return end status
  */
-int showpid(cmd *cmd){
-	if (args_num_error(cmd, 0) == INVALID_COMMAND){
+int showpid(cmd_t *curr_cmd){
+	if (args_num_error(curr_cmd, 0) == INVALID_COMMAND){
 		return SMASH_FAIL;
 	} else {
-		if (cmd->status == FOREGROUND && cmd->env == INTERNAL){	// running in smash process
+		if (curr_cmd->cmdStatus == FOREGROUND && curr_cmd->env == INTERNAL){	// running in smash process
 			printf("smash pid is %d\n", getpid());
 		} else {	// running in child-process
 			printf("smash pid is %d\n", getppid());
@@ -134,11 +134,11 @@ int showpid(cmd *cmd){
  * @brief print current working directory
  * @return end status
  */
-int pwd(cmd *cmd){ 
-	if (args_num_error(cmd, 0) == INVALID_COMMAND){
+int pwd(cmd_t *curr_cmd){ 
+	if (args_num_error(curr_cmd, 0) == INVALID_COMMAND){
 		return SMASH_FAIL;
 	}
-	if (cmd->status == BACKGROUND && cmd->env == INTERNAL){	// running in smash process
+	if (curr_cmd->cmdStatus == BACKGROUND && curr_cmd->env == INTERNAL){	// running in smash process
 		char *pwd = getcwd(NULL, 0);
 		if (pwd != NULL){
 			printf("%s\n", pwd);
@@ -163,11 +163,11 @@ int pwd(cmd *cmd){
 	}
 }
 
-int cd(cmd *cmd){
-	if (args_num_error(cmd, 1) == INVALID_COMMAND){
+int cd(cmd_t *curr_cmd){
+	if (args_num_error(curr_cmd, 1) == INVALID_COMMAND){
 		return SMASH_FAIL;
 	}
-	if (strcmp(cmd->args[1], "-") == 0){ // case: "-" (go to last path)
+	if (strcmp(curr_cmd->args[1], "-") == 0){ // case: "-" (go to last path)
 		if(!globals->last_path){
 			printf("smash error: cd: old pwd not set\n");
 			return SMASH_FAIL;
@@ -179,13 +179,13 @@ int cd(cmd *cmd){
 			return SMASH_SUCCESS;
 		}
 	} else { // case: general cd (including ".." as valid chdir argument)
-		int res = chdir(cmd->args[1]);
+		int res = chdir(curr_cmd->args[1]);
 		if (res == -1){
 			if (errno == ENOENT){
 				printf("smash error: cd: target directory does not exist\n");
 				return SMASH_FAIL;
 			} else if (errno = ENOTDIR){
-				printf("smash error: cd: %s: not a directory\n", cmd->args[1]);
+				printf("smash error: cd: %s: not a directory\n", curr_cmd->args[1]);
 				return SMASH_FAIL;
 			} else {
 				perror("smash error: cd: chdir failed");
@@ -202,8 +202,8 @@ int cd(cmd *cmd){
  * @brief print all jobs in the job list
  * @return end status
  */
-int jobs(cmd *cmd){
-	if (args_num_error(cmd, 0) == INVALID_COMMAND){
+int jobs(cmd_t *curr_cmd){
+	if (args_num_error(curr_cmd, 0) == INVALID_COMMAND){
 		return SMASH_FAIL;
 	}
 	printJobList(globals->jobList);
@@ -214,16 +214,16 @@ int jobs(cmd *cmd){
  * @brief send signal to job with given jobID
  * @return end status
  */
-int smashKill(cmd *cmd){
-	if (cmd->nargs != 2 || 
-		(int)(strtol(cmd->args[1], NULL, 10) < 0) || 
-		(int)(strtol(cmd->args[2], NULL, 10) > JOBS_NUM_MAX) || 
-		(int)(strtol(cmd->args[2], NULL, 10) < 0)){ 
+int smashKill(cmd_t *curr_cmd){
+	if (curr_cmd->nargs != 2 || 
+		(int)(strtol(curr_cmd->args[1], NULL, 10) < 0) || 
+		(int)(strtol(curr_cmd->args[2], NULL, 10) > JOBS_NUM_MAX) || 
+		(int)(strtol(curr_cmd->args[2], NULL, 10) < 0)){ 
 		printf("smash error: cd: invalid arguments\n");
 		return SMASH_FAIL;
 	} 
-	int signum = (int)(strtol(cmd->args[1], NULL, 10));
-	int jobID = (int)(strtol(cmd->args[2], NULL, 10));
+	int signum = (int)(strtol(curr_cmd->args[1], NULL, 10));
+	int jobID = (int)(strtol(curr_cmd->args[2], NULL, 10));
 
 	if (!jobLookup(jobID))
 		printf("smash error: kill: job id %d does not exist\n",jobID);
@@ -235,31 +235,31 @@ int smashKill(cmd *cmd){
  * @brief bring job to foreground and wait for it to finish. if no id is given, take max available jobID
  * @return end status
  */
-int fg(cmd  *cmd){
+int fg(cmd_t *curr_cmd){
 	unsigned int jobID;
-	if (cmd->nargs > 1){
+	if (curr_cmd->nargs > 1){
 		printf("smash error: fg: invalid arguments\n");
 		return SMASH_FAIL;
-	} else if (cmd->args[1] == NULL){
+	} else if (curr_cmd->args[1] == NULL){
 		if (maxAvailableJobID() == -1){
 			printf("smash error: fg: jobs list is empty\n");
 			return SMASH_FAIL;
 		} 
 		jobID = maxAvailableJobID();
 	} else {
-		jobID = (unsigned int)(strtol(cmd->args[1], NULL, 10));
+		jobID = (unsigned int)(strtol(curr_cmd->args[1], NULL, 10));
 		if (!jobLookup(jobID)){
 			printf("smash error: fg: job id %d does not exist\n",jobID);
 			return SMASH_FAIL;
 		}
 	}
 
-	struct job *job = globals->jobList->jobs[jobID];
-	if (getStatus(job) == STOPPED){
-		kill(job->pid, SIGCONT);
+	job_t curr_job = globals->jobList->jobs[jobID];
+	if (getStatus(curr_job) == STOPPED){
+		kill(curr_job->pid, SIGCONT);
 	}
-	printf("%s", job->cmd);
-	waitpid(job->pid, NULL, 0);
+	printf("%s", curr_job->user_input);
+	waitpid(curr_job->pid, NULL, 0);
 	removeJob(jobID);
 	return SMASH_SUCCESS;
 }
@@ -268,19 +268,19 @@ int fg(cmd  *cmd){
  * @brief bring job to background and continue running. if no id is given, take max stopped jobID
  * @return end status
  */
-int bg(cmd *cmd){
+int bg(cmd_t *curr_cmd){
 	int jobID;
-	if (cmd->nargs > 1){
+	if (curr_cmd->nargs > 1){
 		printf("smash error: bg: invalid arguments\n");
 		return SMASH_FAIL;
-	} else if (cmd->args[1] == NULL){
+	} else if (curr_cmd->args[1] == NULL){
 		if (maxStoppedJobID() == -1){
 			printf("smash error: bg: there are no stopped jobs to resume\n");
 			return SMASH_FAIL;
 		} 
 		jobID = maxStoppedJobID();
 	} else {
-		jobID = (unsigned int)(strtol(cmd->args[1], NULL, 10));
+		jobID = (unsigned int)(strtol(curr_cmd->args[1], NULL, 10));
 		if (!jobLookup(jobID)){
 			printf("smash error: bg: job id %d does not exist\n", jobID);
 			return SMASH_FAIL;
@@ -289,9 +289,9 @@ int bg(cmd *cmd){
 			return SMASH_FAIL;
 		}
 	}
-	struct job *job = globals->jobList->jobs[jobID];
-	printf("%s: %d", job->cmd, getpid());
-	kill(job->pid, SIGCONT);
+	job_t curr_job = globals->jobList->jobs[jobID];
+	printf("%s: %d", curr_job->user_input, getpid());
+	kill(curr_job->pid, SIGCONT);
 	return SMASH_SUCCESS;
 }
 
@@ -299,30 +299,30 @@ int bg(cmd *cmd){
  * @brief quit the shell. if "kill" is given, kill all jobs in the job list
  * @return end status
  */
-int quit(cmd *cmd){
-	if (cmd->nargs > 1){
+int quit(cmd_t *curr_cmd){
+	if (curr_cmd->nargs > 1){
 		printf("smash error: quit: expected 0 or 1 arguments\n");
 		return SMASH_FAIL;
-	} else if (cmd->nargs == 0){
+	} else if (curr_cmd->nargs == 0){
 		return SMASH_QUIT;
 	} else {
-		if (strcmp(cmd->args[1], "kill") != 0){
+		if (strcmp(curr_cmd->args[1], "kill") != 0){
 			printf("smash error: quit: unexpected argument\n");
 			return SMASH_FAIL;
 		}
 		// handle quit with kill
 		for (int i = 0; i < JOBS_NUM_MAX; i++){ 
 			if (jobLookup(i)){
-				struct job *job = globals->jobList->jobs[i];
-				printf("[%d] %s - ", i, job->cmd);
+				job_t curr_job = globals->jobList->jobs[i];
+				printf("[%d] %s - ", i, curr_job->user_input);
 				fflush(stdout);
-				kill(job->pid, SIGTERM);
+				kill(curr_job->pid, SIGTERM);
 				printf("sending SIGTERM... ");
 				fflush(stdout);
 				sleep(5);
 				// use "dynamic" check during 5 seconds or "static" after them?
 				if (waitpid(globals->jobList->jobs[i]->pid, NULL, WNOHANG) == 0){ // job still running
-					kill(job->pid, SIGKILL);
+					kill(curr_job->pid, SIGKILL);
 					printf("sending SIGKILL... ");
 					fflush(stdout);
 				}
@@ -333,15 +333,15 @@ int quit(cmd *cmd){
 	return SMASH_QUIT;
 }
 
-int diff(cmd *cmd){
-	if (args_num_error(cmd, 2) == INVALID_COMMAND){
+int diff(cmd_t *curr_cmd){
+	if (args_num_error(curr_cmd, 2) == INVALID_COMMAND){
 		return SMASH_FAIL;
 	}
 	// check if paths are valid and files
 	struct stat st;
 	struct stat st2;
-	stat(cmd->args[1], &st);
-	if(stat(cmd->args[1], &st) == -1 || stat(cmd->args[2], &st2) == -1){
+	stat(curr_cmd->args[1], &st);
+	if(stat(curr_cmd->args[1], &st) == -1 || stat(curr_cmd->args[2], &st2) == -1){
 		printf("smash error: diff: expected valid paths for files\n");
 		return SMASH_FAIL;
 	}
@@ -353,12 +353,12 @@ int diff(cmd *cmd){
 	int id = jobPIDLookup(getpid());
 	if (globals->file1[id]) fclose(globals->file1[id]);
 	if (globals->file2[id]) fclose(globals->file2[id]);
-	globals->file1[id] = fopen(cmd->args[1], "r");
+	globals->file1[id] = fopen(curr_cmd->args[1], "r");
 	if (!globals->file1[id]){
 		perrorSmash("diff", "failed to open file 1");
 		return SMASH_FAIL;
 	}
-	globals->file2[id] = fopen(cmd->args[2], "r");
+	globals->file2[id] = fopen(curr_cmd->args[2], "r");
 	if (!globals->file2[id]){
 		perrorSmash("diff", "failed to open file 2");
 		fclose(globals->file1[id]);
@@ -400,25 +400,21 @@ int diff(cmd *cmd){
  * @brief Run an external command using fork, execv and wait if in fg.
  * @return End status - success or failure
  */
-int run_ext_cmd(cmd *cmd){
-	int is_file = access(cmd->command, F_OK);
+int run_ext_cmd(cmd_t *curr_cmd){
+	int is_file = access(curr_cmd->input, F_OK);
 	if (is_file == -1){ // file not found
 		printf("smash error: external: cannot find program\n");
 		return SMASH_FAIL;
 	}
 	int id = fork();
 	if (id==0){
-		int ret = execv(cmd->command, cmd->args);
+		int ret = execv(curr_cmd->input, curr_cmd->args);
 		if (ret ==-1) printf("smash error: external: invalid command\n");
 		return SMASH_FAIL;
 	} else {
-		if (cmd->status == FOREGROUND){
+		if (curr_cmd->cmdStatus == FOREGROUND){
 			waitpid(id, NULL, 0);
 		}
 	}
 	return SMASH_SUCCESS;
-}
-
-int commandPID(cmd *cmd){
-	return getpid();
 }

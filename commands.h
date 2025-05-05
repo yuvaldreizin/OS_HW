@@ -31,15 +31,16 @@ typedef enum {
  * @struct cmd
  * @brief Represents a command with its arguments and status (internal/external and background).
  */
-typedef struct cmd {
-    char* command;          /**< The command itsel. */
+ struct cmdData {
+    char* input;          /**< The command itself. */
     char** args;            /**< List of command's atguments. */
     int nargs;              /**< Number of arguments. */
-    jobStatus status;       /**< Current status of the command. */
+    jobStatus cmdStatus;       /**< Current status of the command. */
     environment env;        /**< Command's running environment (Internal/External). */
-} cmd;
+};
 
-typedef int (*cmd_func)(struct cmd *cmd);
+typedef struct cmdData cmd_t;
+typedef int (*cmd_func)(cmd_t *curr_cmd);
 
 struct internal_command{
     char* command;             /**< Name of the internal command. */
@@ -51,7 +52,7 @@ typedef struct internal_command internal_command_t;
 
 
 
-int args_num_error(cmd *cmd, int expected_num);
+int args_num_error(cmd_t *curr_cmd, int expected_num);
 
 /*=============================================================================
 * error definitions
@@ -73,27 +74,25 @@ typedef enum {
 /*=============================================================================
 * global functions
 =============================================================================*/
-int parseCmd(char* line, cmd **command);
+int parseCmd(char* line, cmd_t **curr_cmd);
 
-void destroyCmd(cmd *cmd);
+void destroyCmd(cmd_t *curr_cmd);
 
-int isInternalCommand(cmd *cmd);
+int isInternalCommand(cmd_t *curr_cmd);
 
-int run_cmd(cmd *cmd);
+int run_cmd(cmd_t *curr_cmd);
 
-int showpid(cmd *cmd);
-int pwd(cmd *cmd);
-int cd(cmd *cmd);
-int jobs(cmd *cmd);
-int smashKill(cmd *cmd);
-int fg(cmd *cmd);
-int bg(cmd *cmd);
-int quit(cmd *cmd);
-int diff(cmd *cmd);
+int showpid(cmd_t *curr_cmd);
+int pwd(cmd_t *curr_cmd);
+int cd(cmd_t *curr_cmd);
+int jobs(cmd_t *curr_cmd);
+int smashKill(cmd_t *curr_cmd);
+int fg(cmd_t *curr_cmd);
+int bg(cmd_t *curr_cmd);
+int quit(cmd_t *curr_cmd);
+int diff(cmd_t *curr_cmd);
 
 
-int run_ext_cmd(cmd *cmd);
-
-int commandPID(cmd* cmd);
+int run_ext_cmd(cmd_t *curr_cmd);
 
 #endif //COMMANDS_H
