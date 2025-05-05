@@ -45,16 +45,12 @@ int parseCmd(char* line, cmd_t **curr_cmd){
 			break;
 		nargs++;
 	}
-
 	*curr_cmd = MALLOC_VALIDATED(cmd_t, sizeof(cmd_t));
 	(*curr_cmd)->input = MALLOC_VALIDATED(char, (strlen(recieved_cmd) + 1));
 	strcpy((*curr_cmd)->input, recieved_cmd);
-	int args_byte_size = 0;	
+	(*curr_cmd)->args = MALLOC_VALIDATED(char*, nargs*sizeof(char*));
 	for (int i = 0; i < nargs; i++){
-		args_byte_size += strlen(args[i]) + 1;
-	}
-	(*curr_cmd)->args = MALLOC_VALIDATED(char*, args_byte_size);
-	for (int i = 0; i < nargs; i++){
+		(*curr_cmd)->args[i] = MALLOC_VALIDATED(char, (strlen(args[i]) + 1));
 		strcpy((*curr_cmd)->args[i], args[i]);	
 	}
 	(*curr_cmd)->nargs = nargs;
@@ -416,7 +412,8 @@ int run_ext_cmd(cmd_t *curr_cmd){
 		return SMASH_FAIL;
 	}
 	int id = fork();
-	if (id==0){
+	if (id == 0){
+		setpgid(0, 0);
 		int ret = execv(curr_cmd->input, curr_cmd->args);
 		if (ret ==-1) printf("smash error: external: invalid command\n");
 		return SMASH_FAIL;

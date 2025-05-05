@@ -5,7 +5,7 @@ void handleSIGINT(int sig) {
     // catch SIGINT (Ctrl+C) signal
     printf("\nCaught SIGINT (Ctrl+C). Signal number: %d\n", sig);
     if (globals->fgJob) {
-        kill(globals->fgJob->pid, SIGTERM);
+        kill(globals->fgJob->pid, SIGKILL);
     }
     longjmp(env_buf, 1); // jump back to the point where setjmp was called
 }

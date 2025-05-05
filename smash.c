@@ -87,6 +87,7 @@ int main(int argc, char* argv[])
 		} else { // BACKGROUND
 			int new_pid = fork();
 			if (new_pid == 0) { // child process
+				setpgid(0, 0);
 				end_status = run_cmd(curr_cmd);
 			} else { // parent process
 				addNewJob(_line, BACKGROUND, new_pid); 
