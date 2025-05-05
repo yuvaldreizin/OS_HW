@@ -88,7 +88,9 @@ int main(int argc, char* argv[])
 			int new_pid = fork();
 			if (new_pid == 0) { // child process
 				setpgid(0, 0);
-				end_status = run_cmd(curr_cmd);
+				run_cmd(curr_cmd);
+				destroyCmd(curr_cmd); 
+				return 0;
 			} else { // parent process
 				addNewJob(_line, BACKGROUND, new_pid); 
 				// ASSUMPTION - are we dropping jobs/commands if list is full?
