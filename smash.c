@@ -33,14 +33,26 @@ void destroy_globals() {
 	if (globals) free(globals);
 }
 
+void init_globals() {
+	globals = malloc(sizeof(struct globals));
+	globals->jobList = initJobList();
+	globals->last_path = NULL;
+	globals->cur_path = NULL;
+	globals->fgJob = NULL;
+	for (int i = 0; i < JOBS_NUM_MAX; i++){
+		globals->pwd_pointers[i] = NULL;
+		globals->file1[i] = NULL;
+		globals->file2[i] = NULL;
+	}
+}
+
 /*=============================================================================
 * main function
 =============================================================================*/
 int main(int argc, char* argv[])
 {
 	// Gloabls
-	globals = malloc(sizeof(struct globals));
-	globals->jobList = initJobList();
+	init_globals();
 	char _cmd[CMD_LENGTH_MAX];
 	while(1) { 
 		setjmp(env_buf); // set the environment for longjmp
@@ -59,19 +71,14 @@ int main(int argc, char* argv[])
 			continue;
 		}
 		
-		// printf("\nWASTED\n\n");
-		printf("\nparse_status - %d\n\n", parse_status);	
-		printf("\ncommand->status - %d\n\n", command->status);	
 		//check for status and execute (execv + args) / fork and add to jobList
 		CommandResult end_status = SMASH_NULL;
 		if (command->status == FOREGROUND){
-			end_status = run_cmd(command);
 			if (command->env == EXTERNAL){
 				// create fgJob in case of SIGSTOP
-				// YUVAL - make sure I did this init right
-				// YUVAL - change initJob to use nextID and check if not in max (instead of in addNewJob) so we can use it here
-				globals->fgJob = initJob(_line, FOREGROUND, commandPID(command)); 
-
+				globals->fgJob = initJob(_line, FOREGROUND, getpid()); 
+				end_status = run_cmd(command);
+			} else { // INTERNAL
 				end_status = run_cmd(command);
 			}
 		} else { // BACKGROUND
@@ -79,12 +86,10 @@ int main(int argc, char* argv[])
 			if (pid == 0) { // child process
 				end_status = run_cmd(command);
 			} else { // parent process
-				addNewJob(_line, BACKGROUND, commandPID(command)); 
-				// ASSUMPTION - are we dropping jobs/commands if list is full?
-				// YUVAL - We need an indication at least to destroy the job
+				addNewJob(_line, BACKGROUND, pid); 
 			}
 		}
-
+		
 		//initialize buffers for next command
 		_line[0] = '\0';
 		_cmd[0] = '\0';

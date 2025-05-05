@@ -94,6 +94,5 @@ int diff(cmd *cmd);
 
 int run_ext_cmd(cmd *cmd);
 
-int commandPID(cmd* cmd);
 
 #endif //COMMANDS_H

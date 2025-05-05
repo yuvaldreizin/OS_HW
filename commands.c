@@ -37,8 +37,8 @@ int parseCmd(char* line, cmd **command){
 	
 	char* args[ARGS_NUM_MAX];
 	int nargs = 0;
-	args[0] = recieved_cmd; //first token before spaces/tabs/newlines should be command name
-	for(int i = 1; i < ARGS_NUM_MAX; i++)
+	// args[0] = recieved_cmd; //first token before spaces/tabs/newlines should be command name
+	for(int i = 0; i < ARGS_NUM_MAX; i++)
 	{
 		args[i] = strtok(NULL, delimiters); //first arg NULL -> keep tokenizing from previous call
 		if(!args[i])
@@ -48,14 +48,17 @@ int parseCmd(char* line, cmd **command){
 
 	*command = MALLOC_VALIDATED(cmd, sizeof(cmd));
 	(*command)->command = MALLOC_VALIDATED(char, (strlen(recieved_cmd) + 1));
+	strcpy((*command)->command, recieved_cmd);
 	int args_byte_size = 0;	
 	for (int i = 0; i < nargs; i++){
 		args_byte_size += strlen(args[i]) + 1;
 	}
 	(*command)->args = MALLOC_VALIDATED(char*, args_byte_size);
-	(*command)->args = args;
+	for (int i = 0; i < nargs; i++){
+		strcpy((*command)->args[i], args[i]);	
+	}
 	(*command)->nargs = nargs;
-	(*command)->status = strcmp(args[nargs],"&") == 0 ? BACKGROUND : FOREGROUND ;
+	(*command)->status = strcmp(args[nargs-1],"&") == 0 ? BACKGROUND : FOREGROUND ;
 	(*command)->env = (isInternalCommand((*command)) >= 0) ? INTERNAL : EXTERNAL;
 
 	return VALID_COMMAND; 
@@ -66,10 +69,10 @@ int parseCmd(char* line, cmd **command){
  */
 void destroyCmd(cmd* cmd){
 	if (cmd){
-		if(cmd->args)
-			free(cmd->args);
 		if(cmd->command)
 			free(cmd->command);
+		if(cmd->args)
+			free(cmd->args);
 		free(cmd);
 	}
 }
@@ -417,8 +420,4 @@ int run_ext_cmd(cmd *cmd){
 		}
 	}
 	return SMASH_SUCCESS;
-}
-
-int commandPID(cmd *cmd){
-	return getpid();
 }
