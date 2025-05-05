@@ -421,6 +421,7 @@ int run_ext_cmd(cmd_t *curr_cmd){
 	int id = fork();
 	if (id == 0){
 		setpgid(0, 0);
+		globals->fgJob->pid = getpid();
 		int ret = execv(curr_cmd->input, curr_cmd->args);
 		if (ret == -1) {
 			printf("smash error: external: invalid command\n");

@@ -55,6 +55,7 @@ struct global_params {
     char *pwd_pointers[JOBS_NUM_MAX]; 
 	FILE *file1[JOBS_NUM_MAX];
 	FILE *file2[JOBS_NUM_MAX];
+    pid_t smash_pid;
 };
 typedef struct global_params* globals_t;
 extern globals_t globals;

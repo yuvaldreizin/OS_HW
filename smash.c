@@ -47,6 +47,7 @@ void init_globals() {
 		globals->file1[i] = NULL;
 		globals->file2[i] = NULL;
 	}
+	globals->smash_pid = getpid();
 }
 
 /*=============================================================================
@@ -90,7 +91,7 @@ int main(int argc, char* argv[])
 				setpgid(0, 0);
 				run_cmd(curr_cmd);
 				destroyCmd(curr_cmd); 
-				return 0;
+				exit(0); // child process exits
 			} else { // parent process
 				addNewJob(_line, BACKGROUND, new_pid); 
 				// ASSUMPTION - are we dropping jobs/commands if list is full?
