@@ -35,19 +35,28 @@ void destroy_globals() {
 	if (globals) free(globals);
 }
 
+void init_globals() {
+	globals = malloc(sizeof(struct globals));
+	if (!globals) ERROR_EXIT("malloc");
+	globals->jobList = initJobList();
+	globals->last_path = NULL;
+	globals->cur_path = NULL;
+	globals->fgJob = NULL;
+	for (int i = 0; i < JOBS_NUM_MAX; i++){
+		globals->pwd_pointers[i] = NULL;
+		globals->file1[i] = NULL;
+		globals->file2[i] = NULL;
+	}
+}
+
 /*=============================================================================
 * main function
 =============================================================================*/
 int main(int argc, char* argv[])
 {
 	// Gloabls
-	globals = malloc(sizeof(struct global_params));
-	if (!globals) {
-		perror("Failed to allocate memory for globals");
-		exit(EXIT_FAILURE);
-	}
-	globals->jobList = initJobList();
-	char _cmd[CMD_LENGTH_MAX+1];
+	init_globals();
+	char _cmd[CMD_LENGTH_MAX];
 	while(1) { 
 		sigsetjmp(env_buf, 1); // set the environment for longjmp
 		setupSignalHandlers(); // setup signal handlers
@@ -69,13 +78,11 @@ int main(int argc, char* argv[])
 		//check for status and execute (execv + args) / fork and add to jobList
 		CommandResult end_status = SMASH_NULL;
 		if (curr_cmd->cmdStatus == FOREGROUND){
-			end_status = run_cmd(curr_cmd);
 			if (curr_cmd->env == EXTERNAL){
 				// create fgJob in case of SIGSTOP
-				// YUVAL - make sure I did this init right
-				// YUVAL - change initJob to use nextID and check if not in max (instead of in addNewJob) so we can use it here
 				globals->fgJob = initJob(_line, FOREGROUND, 0); 
-
+				end_status = run_cmd(curr_cmd);
+			} else { // INTERNAL
 				end_status = run_cmd(curr_cmd);
 			}
 		} else { // BACKGROUND
