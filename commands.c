@@ -226,7 +226,6 @@ int jobs(cmd_t *curr_cmd){
 	if (args_num_error(curr_cmd, 0) == INVALID_COMMAND){
 		return SMASH_FAIL;
 	}
-	printf("smash: jobs count: %d\n", globals->jobList->count);
 	printJobList(globals->jobList);
 	return SMASH_SUCCESS;
 }
@@ -279,9 +278,9 @@ int fg(cmd_t *curr_cmd){
 	if (getStatus(curr_job) == STOPPED){
 		kill(curr_job->pid, SIGCONT);
 	}
-	printf("%s", curr_job->user_input);
+	printf("[%d] %s \n", jobID, curr_job->user_input); 
+	removeToFg(jobID);
 	waitpid(curr_job->pid, NULL, 0);
-	removeJob(jobID);
 	return SMASH_SUCCESS;
 }
 
@@ -311,8 +310,9 @@ int bg(cmd_t *curr_cmd){
 		}
 	}
 	job_t curr_job = globals->jobList->jobs[jobID];
-	printf("%s: %d", curr_job->user_input, getpid());
+	printf("[%d] %s: %d\n", jobID, curr_job->user_input, getpid());
 	kill(curr_job->pid, SIGCONT);
+	curr_job->status = BACKGROUND;
 	return SMASH_SUCCESS;
 }
 
@@ -341,14 +341,22 @@ int quit(cmd_t *curr_cmd){
 				kill(curr_job->pid, SIGTERM);
 				printf("sending SIGTERM... ");
 				fflush(stdout);
-				sleep(5);
-				// use "dynamic" check during 5 seconds or "static" after them?
-				if (waitpid(globals->jobList->jobs[i]->pid, NULL, WNOHANG) == 0){ // job still running
+				// check dynamicly if killed during next 5 seconds.
+				int is_done = 0;
+				for (int j = 0; j < 5; j++){
+					if (waitpid(curr_job->pid, NULL, WNOHANG) > 0){ 
+						printf("done\n");
+						is_done = 1;
+						break;
+					}
+					sleep(1);
+				}
+				if (is_done == 0){
 					kill(curr_job->pid, SIGKILL);
 					printf("sending SIGKILL... ");
 					fflush(stdout);
+					printf("done\n");
 				}
-				printf("done\n");
 			}
 		}
 	}
@@ -429,17 +437,23 @@ int run_ext_cmd(cmd_t *curr_cmd){
 		printf("smash error: external: cannot find program\n");
 		return SMASH_FAIL;
 	}
-	int id = fork();
-	if (id == 0){
-		setpgid(0, 0);
-		globals->fgJob->pid = getpid();
-		int ret = execv(curr_cmd->input, curr_cmd->args);
-		if (ret == -1) {
+	if (curr_cmd->cmdStatus == BACKGROUND){
+		// avoid unnecessary fork. will cause zombie process that will die in removeFinishedJobs.
+		if (execv(curr_cmd->input, curr_cmd->args) == -1) {
 			printf("smash error: external: invalid command\n");
 			return SMASH_FAIL;
 		}
 	} else {
-		if (curr_cmd->cmdStatus == FOREGROUND){
+		int id = fork();
+		if (id == 0){
+			setpgid(0, 0);
+			int ret = execv(curr_cmd->input, curr_cmd->args);
+			if (ret == -1) {
+				printf("smash error: external: invalid command\n");
+				return SMASH_FAIL;
+			}
+		} else {
+			globals->fgJob->pid = id;
 			waitpid(id, NULL, 0);
 		}
 	}

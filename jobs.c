@@ -88,6 +88,17 @@ void removeJob(unsigned int ID){
     }
 }
 
+void removeToFg(unsigned int ID){
+    // run only in fg()! otherwise might run over fgjob
+    jobList_t globJobList = globals->jobList;
+    globals->fgJob = globJobList->jobs[ID];
+    globJobList->jobs[ID] = NULL;
+    globJobList->count--;
+    if(ID < globJobList->nextID) {
+        globJobList->nextID = ID;
+    }
+}
+
 jobStatus getStatus(job_t curr_job){
     return curr_job->status;
 }
@@ -102,14 +113,13 @@ void removeFinishedJobs(){
         if (globJobList->jobs[i] && globJobList->jobs[i]->status == BACKGROUND){
             int wait_status;
             pid_t result = waitpid(globJobList->jobs[i]->pid, &wait_status, WNOHANG); //WNOHANG flag to avoid blocking
-            if (result == -1) // error occurred
-                perror("waitpid failed");
-            else if (result > 0 && WIFEXITED(wait_status)){
-                printf("entered if\n");
+            
+            if (result == -1) {// error occurred
+                // perror("waitpid failed");
+            } else if (result > 0 && WIFEXITED(wait_status)){
                 removeJob(i);
 
-            } // job finished
-            //else - job still running, do nothing
+            } // else job finished
         }
     }
 }

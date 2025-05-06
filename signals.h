@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <setjmp.h>
 #include <unistd.h>
+#include <termios.h>
 
 /*=============================================================================
 * global variables
