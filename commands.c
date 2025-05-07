@@ -54,11 +54,12 @@ int parseCmd(char* line, cmd_t **curr_cmd){
 		(*curr_cmd)->cmdStatus = BACKGROUND;
 		nargs--;	
 	} else (*curr_cmd)->cmdStatus = FOREGROUND;
-	(*curr_cmd)->args = MALLOC_VALIDATED(char*, nargs * sizeof(char*));
+	(*curr_cmd)->args = MALLOC_VALIDATED(char*, (nargs+2) * sizeof(char*));
 	for (int i = 0; i <= nargs; i++){ // include the command name
 		(*curr_cmd)->args[i] = MALLOC_VALIDATED(char, (strlen(args[i]) + 1));
 		strcpy((*curr_cmd)->args[i], args[i]);
 	}
+	(*curr_cmd)->args[nargs+1] = NULL; // last arg is NULL for execv
 	(*curr_cmd)->nargs = nargs;
 	// (*curr_cmd)->cmdStatus = (strcmp(args[nargs],"&") == 0) ? BACKGROUND : FOREGROUND;
 	(*curr_cmd)->env = (isInternalCommand((*curr_cmd)) >= 0) ? INTERNAL : EXTERNAL;
@@ -72,7 +73,7 @@ int parseCmd(char* line, cmd_t **curr_cmd){
 void destroyCmd(cmd_t* desCmd){
 	if (desCmd){
 		if(desCmd->args){
-			for (int i = 0; i < desCmd->nargs; i++){
+			for (int i = 0; i <= desCmd->nargs; i++){
 				if(desCmd->args[i]) free(desCmd->args[i]);
 			}
 			free(desCmd->args);
@@ -250,12 +251,13 @@ int smashKill(cmd_t *curr_cmd){
 		return SMASH_FAIL;
 	}
 	int jobID = (int)(strtol(curr_cmd->args[SECOND_ARG], &endptr, 10));
-	if (errno != 0 || *endptr != '\0' || jobID < 0 || jobID >= JOBS_NUM_MAX){
+	if (errno != 0 || *endptr != '\0'){
 		printf("smash error: kill: invalid arguments\n");
 		return SMASH_FAIL;
 	}
 
-	if (!jobLookup(jobID)){
+
+	if (jobID < 0 || jobID >= JOBS_NUM_MAX || !jobLookup(jobID)){
 		printf("smash error: kill: job id %d does not exist\n",jobID);
 		return SMASH_FAIL;
 	}
@@ -267,6 +269,7 @@ int smashKill(cmd_t *curr_cmd){
  * @return end status
  */
 int fg(cmd_t *curr_cmd){
+	removeFinishedJobs();
 	unsigned int jobID;
 	if (curr_cmd->nargs > 1){
 		printf("smash error: fg: invalid arguments\n");
@@ -278,6 +281,13 @@ int fg(cmd_t *curr_cmd){
 		} 
 		jobID = maxAvailableJobID();
 	} else {
+		errno = 0;
+		char *endptr = NULL;
+		jobID = (unsigned int)(strtol(curr_cmd->args[FIRST_ARG], &endptr, 10));
+		if (errno != 0 || *endptr != '\0'){
+			printf("smash error: fg: invalid arguments\n");
+			return SMASH_FAIL;
+		}
 		jobID = (unsigned int)(strtol(curr_cmd->args[FIRST_ARG], NULL, 10));
 		if (!jobLookup(jobID)){
 			printf("smash error: fg: job id %d does not exist\n",jobID);
@@ -300,6 +310,7 @@ int fg(cmd_t *curr_cmd){
  * @return end status
  */
 int bg(cmd_t *curr_cmd){
+	removeFinishedJobs();
 	int jobID;
 	if (curr_cmd->nargs > 1){
 		printf("smash error: bg: invalid arguments\n");
@@ -311,7 +322,13 @@ int bg(cmd_t *curr_cmd){
 		} 
 		jobID = maxStoppedJobID();
 	} else {
-		jobID = (unsigned int)(strtol(curr_cmd->args[FIRST_ARG], NULL, 10));
+		errno = 0;
+		char *endptr = NULL;
+		jobID = (unsigned int)(strtol(curr_cmd->args[FIRST_ARG], &endptr, 10));
+		if (errno != 0 || *endptr != '\0'){
+			printf("smash error: bg: invalid arguments\n");
+			return SMASH_FAIL;
+		}
 		if (!jobLookup(jobID)){
 			printf("smash error: bg: job id %d does not exist\n", jobID);
 			return SMASH_FAIL;

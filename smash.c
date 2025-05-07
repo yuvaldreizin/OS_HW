@@ -66,8 +66,6 @@ int main(int argc, char* argv[])
 		printf("smash > ");
 		fgets(_line, CMD_LENGTH_MAX, stdin);
 		strcpy(_cmd, _line);
-		//check for finished jobs
-		removeFinishedJobs();
 
 		//parse cmd
 		cmd_t *curr_cmd = NULL;
