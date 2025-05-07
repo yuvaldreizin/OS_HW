@@ -140,6 +140,13 @@ int addExistingJob(job_t curr_job);
 void removeJob(unsigned int ID);
 
 /**
+ * @brief Removes a job from the job list by its ID and save it in fg.
+ * 
+ * @param ID The ID of the job to remove.
+ */
+void removeToFg(unsigned int ID);
+
+/**
  * @brief Removes all finished jobs from the job list.
  */
 void removeFinishedJobs();

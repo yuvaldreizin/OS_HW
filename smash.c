@@ -58,9 +58,9 @@ int main(int argc, char* argv[])
 	// Gloabls
 	init_globals();
 	char _cmd[CMD_LENGTH_MAX];
+	setupSignalHandlers(); // setup signal handlers
 	while(1) { 
 		sigsetjmp(env_buf, 1); // set the environment for longjmp
-		setupSignalHandlers(); // setup signal handlers
 		printf("smash > ");
 		fgets(_line, CMD_LENGTH_MAX, stdin);
 		strcpy(_cmd, _line);
@@ -85,6 +85,7 @@ int main(int argc, char* argv[])
 			} else { // INTERNAL
 				end_status = run_cmd(curr_cmd);
 			}
+			destroyCmd(curr_cmd);
 		} else { // BACKGROUND
 			int new_pid = fork();
 			if (new_pid == 0) { // child process
@@ -93,14 +94,14 @@ int main(int argc, char* argv[])
 				destroyCmd(curr_cmd); 
 				exit(0); // child process exits
 			} else if (new_pid > 0){ // parent process
-				addNewJob(_line, BACKGROUND, new_pid); 
+				addNewJob(_line, BACKGROUND, new_pid);
 				// ASSUMPTION - are we dropping jobs/commands if list is full?
 			}
 		}
 		//initialize buffers for next command
 		_line[0] = '\0';
 		_cmd[0] = '\0';
-		destroyCmd(curr_cmd);
+		// destroyCmd(curr_cmd); - not here so BACKGROUND parent won't kill child
 		if (end_status == SMASH_QUIT) {
 			break; 
 		}
