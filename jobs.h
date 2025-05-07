@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include "utils.h"
+#include <sys/types.h>
 
 #define JOBS_NUM_MAX 100
 

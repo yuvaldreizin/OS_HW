@@ -1,4 +1,5 @@
 // jobs.c
+#define _POSIX_C_SOURCE 200809L
 #include "jobs.h"
 
 job_t initJob(char* curr_cmd, jobStatus curr_status, pid_t curr_pid){
