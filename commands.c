@@ -235,20 +235,29 @@ int jobs(cmd_t *curr_cmd){
  * @return end status
  */
 int smashKill(cmd_t *curr_cmd){
-	if (curr_cmd->nargs != 2 || 
-		(int)(strtol(curr_cmd->args[FIRST_ARG], NULL, 10) < 0) || 
-		(int)(strtol(curr_cmd->args[SECOND_ARG], NULL, 10) > JOBS_NUM_MAX) || 
-		(int)(strtol(curr_cmd->args[SECOND_ARG], NULL, 10) < 0)){ 
-		printf("smash error: cd: invalid arguments\n");
+	if (curr_cmd->nargs != 2){ 
+		printf("smash error: kill: invalid arguments\n");
 		return SMASH_FAIL;
 	} 
-	int signum = (int)(strtol(curr_cmd->args[FIRST_ARG], NULL, 10));
-	int jobID = (int)(strtol(curr_cmd->args[SECOND_ARG], NULL, 10));
+	errno = 0;
+	char *endptr = NULL;
+	// check if signal is valid
+	int signum = (int)(strtol(curr_cmd->args[FIRST_ARG], &endptr, 10));
+	if (errno != 0 || *endptr != '\0' || signum < 0){
+		printf("smash error: kill: invalid arguments\n");
+		return SMASH_FAIL;
+	}
+	int jobID = (int)(strtol(curr_cmd->args[SECOND_ARG], &endptr, 10));
+	if (errno != 0 || *endptr != '\0' || jobID < 0 || jobID >= JOBS_NUM_MAX){
+		printf("smash error: kill: invalid arguments\n");
+		return SMASH_FAIL;
+	}
 
-	if (!jobLookup(jobID))
+	if (!jobLookup(jobID)){
 		printf("smash error: kill: job id %d does not exist\n",jobID);
-	sendSignal(signum, jobID);
-	return SMASH_SUCCESS;
+		return SMASH_FAIL;
+	}
+	return sendSignal(signum, jobID);
 }
 
 /**

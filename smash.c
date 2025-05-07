@@ -9,6 +9,7 @@
 #include "signals.h"
 #include "jobs.h"
 #include <setjmp.h>
+#include <sys/types.h>
 
 /*=============================================================================
 * classes/structs declarations
@@ -94,7 +95,10 @@ int main(int argc, char* argv[])
 				destroyCmd(curr_cmd); 
 				exit(0); // child process exits
 			} else if (new_pid > 0){ // parent process
-				addNewJob(_line, BACKGROUND, new_pid);
+				char *temp = _cmd;
+				while (*temp != '\0' && *temp != '\n') temp++;
+				*temp = '\0'; // remove the newline character
+				addNewJob(_cmd, BACKGROUND, new_pid);
 				// ASSUMPTION - are we dropping jobs/commands if list is full?
 			}
 		}
