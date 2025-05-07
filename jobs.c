@@ -47,7 +47,7 @@ void destroyJobList() {
 int addNewJob(char* name, jobStatus curr_status, pid_t curr_pid){
     jobList_t globJobList = globals->jobList;
     if (globJobList->count == JOBS_NUM_MAX) {
-        fprintf(stderr, "Job list is full\n");
+        // fprintf(stderr, "Job list is full\n");
         return -1;
     }
     unsigned int ID = globJobList->nextID;
@@ -65,7 +65,7 @@ int addNewJob(char* name, jobStatus curr_status, pid_t curr_pid){
 int addExistingJob(job_t curr_job){
     jobList_t globJobList = globals->jobList;
     if (globJobList->count == JOBS_NUM_MAX) {
-        fprintf(stderr, "Job list is full\n");
+        // fprintf(stderr, "Job list is full\n");
         return -1;
     }
     unsigned int ID = globJobList->nextID;
@@ -111,13 +111,13 @@ void changeStatus(job_t curr_job, jobStatus new){
 void removeFinishedJobs(){
     jobList_t globJobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
-        if (globJobList->jobs[i] && globJobList->jobs[i]->status == BACKGROUND){
+        if (globJobList->jobs[i]){
             int wait_status;
             pid_t result = waitpid(globJobList->jobs[i]->pid, &wait_status, WNOHANG); //WNOHANG flag to avoid blocking
             
             if (result == -1) {// error occurred
                 // perror("waitpid failed");
-            } else if (result > 0 && WIFEXITED(wait_status)){
+            } else if (result > 0 && (WIFEXITED(wait_status)|| WIFSIGNALED(wait_status))) { // job finished
                 removeJob(i);
 
             } // else job finished

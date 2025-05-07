@@ -58,15 +58,16 @@ void setupSignalHandlers() {
     }
 }
 
-void sendSignal(int sig, unsigned int receiverJobID) {
+int sendSignal(int sig, unsigned int receiverJobID) {
     job_t job = jobLookup(receiverJobID);
-    if (job == NULL) {
-        fprintf(stderr, "Job with ID %d not found\n", receiverJobID);
-        return;
+    if (!job) {
+        printf("Something went wrong!!!!! signals::sendSignal\n");
+        return 2;
     }
     if (kill(job->pid, sig) == -1) {
-        perror("Failed to send signal");
-    } else {
-        printf("Signal %d sent to job with ID %d (PID %d)\n", sig, receiverJobID, job->pid);
+		printf("smash error: kill: invalid arguments\n");
+        return 2;
     }
+    printf("Signal %d sent to job with ID %d (PID %d)\n", sig, receiverJobID, job->pid);
+    return 0;
 }
