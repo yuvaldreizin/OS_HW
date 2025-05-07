@@ -45,9 +45,9 @@ void destroyJobList() {
 }
 
 int addNewJob(char* name, jobStatus curr_status, pid_t curr_pid){
+    removeFinishedJobs(); // remove finished jobs before adding a new one
     jobList_t globJobList = globals->jobList;
     if (globJobList->count == JOBS_NUM_MAX) {
-        // fprintf(stderr, "Job list is full\n");
         return -1;
     }
     unsigned int ID = globJobList->nextID;
@@ -63,6 +63,7 @@ int addNewJob(char* name, jobStatus curr_status, pid_t curr_pid){
 }
 
 int addExistingJob(job_t curr_job){
+    removeFinishedJobs(); // remove finished jobs before adding a new one
     jobList_t globJobList = globals->jobList;
     if (globJobList->count == JOBS_NUM_MAX) {
         // fprintf(stderr, "Job list is full\n");
@@ -126,12 +127,13 @@ void removeFinishedJobs(){
 }
 
 void printJobList(){
+    removeFinishedJobs(); // remove finished jobs before printing
     jobList_t globJobList = globals->jobList;
     for (int i = 0; i < JOBS_NUM_MAX; i++) {
         if (globJobList->jobs[i]) {
             job_t curr_job = globJobList->jobs[i];
             int time_elapsed_sec = (int)difftime(time(NULL), curr_job->creationTime);
-            printf("[%d] %s: %d %d secs%s\n", i, curr_job->user_input, curr_job->pid, time_elapsed_sec,(curr_job->status == STOPPED)? " stopped" : ""); //ASSUMPTION - if job isn't stopped we dont print the space after "secs"
+            printf("[%d] %s: %d %d secs%s\n", i, curr_job->user_input, curr_job->pid, time_elapsed_sec,(curr_job->status == STOPPED)? " (stopped)" : ""); //ASSUMPTION - if job isn't stopped we dont print the space after "secs"
         }
     }
 }
