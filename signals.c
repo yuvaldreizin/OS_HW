@@ -1,4 +1,5 @@
 // signals.c
+#define _POSIX_C_SOURCE 200809L
 #include "signals.h"
 #define _GNU_SOURCE
 
@@ -37,12 +38,6 @@ void handleSIGTSTP(int sig) {
 void setupSignalHandlers() {
     struct sigaction saSIGINT;
     struct sigaction saSIGTSTP;
-
-    // prevent printing ^Z and ^C
-    // struct termios term;
-    // tcgetattr(STDIN_FILENO, &term);
-    // term.c_lflag &= ~ECHOCTL;
-    // tcsetattr(STDIN_FILENO, TCSANOW, &term);
 
     // Setup SIGINT handler
     saSIGINT.sa_handler = handleSIGINT;

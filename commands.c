@@ -1,5 +1,7 @@
 //commands.c
+#define _POSIX_C_SOURCE 200809L
 #include "commands.h"
+#include <signal.h>
 
 internal_command_t commands_list[] = {
     {"showpid", showpid},
@@ -198,7 +200,7 @@ int cd(cmd_t *curr_cmd){
 			if (errno == ENOENT){
 				printf("smash error: cd: target directory does not exist\n");
 				return SMASH_FAIL;
-			} else if (errno = ENOTDIR){
+			} else if (errno == ENOTDIR){
 				printf("smash error: cd: %s: not a directory\n", curr_cmd->args[FIRST_ARG]);
 				return SMASH_FAIL;
 			} else {
@@ -245,8 +247,10 @@ int smashKill(cmd_t *curr_cmd){
 	int signum = (int)(strtol(curr_cmd->args[FIRST_ARG], NULL, 10));
 	int jobID = (int)(strtol(curr_cmd->args[SECOND_ARG], NULL, 10));
 
-	if (!jobLookup(jobID))
+	if (!jobLookup(jobID)){
 		printf("smash error: kill: job id %d does not exist\n",jobID);
+		return SMASH_FAIL;
+	}
 	sendSignal(signum, jobID);
 	return SMASH_SUCCESS;
 }
