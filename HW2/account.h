@@ -9,23 +9,29 @@ typedef struct{
     int pass;
     int balance;
     rwlock_t lock;
-} account_t;
+} account;
 
 
-account_t* account_init(int id, int pass, int balance);
-void account_free(account_t* account);
-int account_get_id(account_t* account);
-int account_get_pass(account_t* account);
-int account_get_balance(account_t* account);
-f_status_t account_deposit(account_t* account, int pass, int amount);
-f_status_t account_withdraw(account_t* account, int amount);
-f_status_t account_transfer(account_t* from, account_t* to, int amount);
-f_status_t account_print(account_t* account);
-void account_read_lock(account_t* account);
-void account_read_unlock(account_t* account);
-void account_write_lock(account_t* account);
-void account_write_unlock(account_t* account);
+account *account_init(int id, int pass, int balance);
+void account_free(account *account);
+int account_get_id(account *account);
+int account_get_pass(account *account);
+int account_get_balance(account *account);
+void account_read_lock(account *account);
+void account_read_unlock(account *account);
+void account_write_lock(account *account);
+void account_write_unlock(account *account);
 
+account *account_check_id(int id);
+
+f_status_t account_o(int id, int pass, int initial_amount, int atm_id);
+f_status_t account_d(int id, int pass, int amount, int atm_id);
+f_status_t account_w(int id, int pass, int amount, int atm_id);
+f_status_t account_b(int id, int pass, int atm_id);
+f_status_t account_q(int id, int pass, int atm_id);
+f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id);
+f_status_t account_print(int id);
+f_status_t account_print_all();
 
 
 #endif // ACCOUNT_H

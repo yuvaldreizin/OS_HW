@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include <glib.h>
+#include <unistd.h>
 
 /*=============================================================================
 * error handling - some useful macros and examples of error handling,
@@ -44,6 +45,8 @@ struct globals {
     GList *atms;
     int num_accounts;
     int num_atms;
+    rwlock_t log_lock;
+    char *log_file;
 };
 
 typedef struct globals globals_t;
@@ -55,6 +58,14 @@ void global_init(){
     globals->atms = NULL;
     globals->num_accounts = 0;
     globals->num_atms = 0;
+    rwlock_init(&(globals->log_lock));
+    globals->log_file = "log.txt";
+    // remove existing log file if it exists
+    if (access(globals->log_file, F_OK) != -1) {
+        remove(globals->log_file);
+    }
+    FILE *log_file = fopen(globals->log_file, "w");
+    fclose(log_file);
 }
 
 void global_free(){
@@ -63,9 +74,16 @@ void global_free(){
     g_list_free_full(globals->accounts, free);
     // TODO - Free all ATMs
     g_list_free_full(globals->atms, free);
+    rwlock_destroy(&(globals->log_lock));
     free(globals);
     globals = NULL;
 }
 
+void log_lock(){
+    rwlock_acquire_write(&(globals->log_lock));
+}
+void log_unlock(){
+    rwlock_release_write(&(globals->log_lock));
+}
 
 #endif // UTILS_H
