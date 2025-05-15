@@ -1,5 +1,7 @@
 #include "atm.h"
 
+extern int finished;
+
 atm_t atm_init(int id, char * file)
 {
     atm_t new_atm = MALLOC_VALIDATED(atruct atm, sizeof(struct atm));
@@ -56,13 +58,50 @@ command_t read_next_command(atm_t atm){
     return new_command;
 }
 
-fstatus_t execute_command(atm_t atm, char * command)
+void execute_command(atm_t atm, char *cmd)
 {
-    if (command == NULL)
+    switch (cmd->type)
     {
-        ERROR_EXIT("Error executing command");
+        case 'O':
+            account_o(cmd->args[0], cmd->args[1], cmd->args[2], atm->id);
+            break;
+        case 'D':
+            account_d(cmd->args[0], cmd->args[1], cmd->args[2], atm->id);
+            break;
+        case 'W':
+            account_w(cmd->args[0], cmd->args[1], cmd->args[2], atm->id);
+            break;
+        case 'B':
+            account_b(cmd->args[0], cmd->args[1], atm->id);
+            break;
+        case 'Q':
+            account_q(cmd->args[0], cmd->args[1], atm->id);
+            break;
+        case 'T':
+            account_t(cmd->args[0], cmd->args[1], cmd->args[2], c, atm->id);
+            break;
+        case 'C':
+            account_c(cmd->args[0] atm->id);
+            break;
+        default:
+            ERROR_EXIT("Invalid command");
     }
-    // Execute the command
-    // ...
-    return SUCCESS;
+    // Free the command
+    free(command);
+}
+
+void run_atm(atm_t atm)
+{
+    command_t cmd;
+    while (1)
+    {
+        usleep(100000);
+        if ((cmd = read_next_command(atm)) != NULL){
+            break;
+        }
+        execute_command(atm, cmd);
+        sleep(1)
+    }
+    finished++;
+    destroy_atm(atm);
 }
