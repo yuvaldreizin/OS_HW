@@ -41,31 +41,6 @@ int account_get_balance(account_t* account){
 }
 
 
-f_status_t account_deposit(account_t* account, int pass, int amount){
-    // assume amount >= 0
-    if (account->pass != pass) return FAILURE;
-    account_write_lock(account);
-    account->balance += amount;
-    account_write_unlock(account);
-    return SUCCESS;
-}
-
-
-f_status_t account_withdraw(account_t* account, int amount){
-
-}
-
-
-f_status_t account_transfer(account_t* from, account_t* to, int amount){
-
-}
-
-
-f_status_t account_print(account_t* account){
-
-}
-
-
 void account_read_lock(account_t* account){
     rwlock_acquire_read(&(account->lock));
 }
@@ -83,5 +58,50 @@ void account_write_lock(account_t* account){
 
 void account_write_unlock(account_t* account){
     rwlock_release_write(&(account->lock));
+}
+
+account *account_check_id(int id){
+
+}
+
+
+f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
+
+}
+
+
+f_status_t account_d(int id, int pass, int amount, int atm_id){
+
+}
+
+
+f_status_t account_w(int id, int pass, int amount, int atm_id){
+
+}
+
+
+f_status_t account_b(int id, int pass, int atm_id){
+
+}
+
+
+f_status_t account_q(int id, int pass, int atm_id){
+
+}
+
+
+f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id){
+
+}
+
+
+f_status_t account_print(int id){
+
+}
+
+f_status_t account_print_all(){
+    // lock all
+    // print all
+    // unlock all
 }
 
