@@ -3,6 +3,11 @@
 
 #include "lock.h"
 #include "utils.h"
+#include <glib.h>
+
+/*=============================================================================
+* Structures
+* =============================================================================*/
 
 typedef struct{
     int id;
@@ -11,6 +16,11 @@ typedef struct{
     rwlock_t lock;
 } account;
 
+extern globals_t *globals;
+
+/*=============================================================================
+* Structures
+* =============================================================================*/
 
 account *account_init(int id, int pass, int balance);
 void account_free(account *account);
@@ -22,6 +32,8 @@ void account_read_unlock(account *account);
 void account_write_lock(account *account);
 void account_write_unlock(account *account);
 
+gint (*account_compare_ids)(gconstpointer id1, gconstpointer id2);
+account *account_check_id_and_pass(int id, int pass, int atm_id);
 account *account_check_id(int id);
 
 f_status_t account_o(int id, int pass, int initial_amount, int atm_id);
