@@ -66,7 +66,12 @@ gint (*account_compare_ids)(gconstpointer id1, gconstpointer id2){
     else return 0;
 }
 
-account *account_check_id(int id){
+account *account_check_id(int id){          
+    /* =======================================================================
+    Critical!
+    No lock between check and actual use in function. 
+    Optional - use globals lock until account lock? return without unlock and caller will unlock
+    ================================================================ =======*/
     rwlock_acquire_read(&(globals->account_lock));
     for (int i = 0; i < globals->num_accounts; i++){
         account *acnt = (account*)g_list_nth_data(globals->accounts, i);
@@ -124,6 +129,7 @@ f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
 
 f_status_t account_d(int id, int pass, int amount, int atm_id){
     account *acnt = account_check_id_and_pass(id, pass, atm_id);
+    if (!acnt) return FAILURE;
     // add amount
     // TODO - check if amount > 0 ?
     account_write_lock(acnt);
@@ -140,6 +146,7 @@ f_status_t account_d(int id, int pass, int amount, int atm_id){
 
 f_status_t account_w(int id, int pass, int amount, int atm_id){
     account *acnt = account_check_id_and_pass(id, pass, atm_id);
+    if (!acnt) return FAILURE;
     // check balance
     int balance = account_get_balance(acnt);
     if (balance < amount){
@@ -161,27 +168,110 @@ f_status_t account_w(int id, int pass, int amount, int atm_id){
 
 
 f_status_t account_b(int id, int pass, int atm_id){
-
+    account *acnt = account_check_id_and_pass(id, pass, atm_id);
+    if (!acnt) return FAILURE;
+    // check balance
+    int balance = account_get_balance(acnt);
+    // write to log
+    log_lock();
+    fprintf(globals->log_file, "%d: Account %d balance is %d\n", atm_id, id, balance);
+    log_unlock();
+    return SUCCESS;
 }
 
 
 f_status_t account_q(int id, int pass, int atm_id){
-
+    account *acnt = account_check_id_and_pass(id, pass, atm_id);
+    if (!acnt) return FAILURE;
+    // delete account
+    int balance = account_get_balance(acnt);
+    rwlock_acquire_write(&(globals->account_lock));
+    rwlock_acquire_write(&(acnt->lock));
+    g_list_remove(globals->accounts, acnt);
+    globals->num_accounts--;
+    rwlock_release_write(&(acnt->lock));
+    rwlock_release_write(&(globals->account_lock));
+    account_free(acnt);
+    // write to log
+    log_lock();
+    fprintf(globals->log_file, "%d: Account %d is now closed. Balance was %d\n", atm_id, id, balance);
+    log_unlock();
+    return SUCCESS;
 }
 
 
 f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id){
-
+    account *acnt = account_check_id_and_pass(id, pass, atm_id);
+    if (!acnt) return FAILURE;
+    account *to_acnt = account_check_id(atm_id);
+    if (!to_acnt) return FAILURE;
+    // check balance
+    int balance = account_get_balance(acnt);
+    if (balance < amount){
+        log_lock();
+        fprintf(globals->log_file, "Error %d: Your transaction failed - account id %d balance is lower than %d\n", atm_id, id, amount);
+        log_unlock();
+        return FAILURE;
+    }
+    rwlock_acquire_write(&(acnt->lock));
+    rwlock_acquire_write(&(to_acnt->lock));
+    acnt->balance -= amount;
+    int balance = acnt->balance;
+    to_acnt->balance += amount;
+    int to_balance = to_acnt->balance;
+    rwlock_release_write(&(to_acnt->lock));
+    rwlock_release_write(&(acnt->lock));
+    // write to log
+    log_lock();
+    fprintf(globals->log_file, "%d: Transfer <amount> from account <source account> to account <target account> new account balance is <source account balance> new target account balance is <target account balance>\n",
+        atm_id, amount, id, to_id, balance, to_balance);
+    log_unlock();
 }
 
 
-f_status_t account_print(int id){
-
+f_status_t account_print(account *acnt){
+    // print account
+    int balance = account_get_balance(acnt);
+    int pass = account_get_pass(acnt);
+    printf("Account %d: Balance - %d $, Account Password - %d\n", id, balance, pass);
+    return SUCCESS;
 }
 
 f_status_t account_print_all(){
+    printf("Current Bank Status\n");
     // lock all
+    rwlock_acquire_read(&(globals->account_lock));
+    // lock global is enough? need account unlocked for get functions
+    // for (int i = 0; i < globals->num_accounts; i++){
+    //     account_read_lock((account*)g_list_nth_data(globals->accounts, i));
+    // }
     // print all
+    for (int i = 0; i < globals->num_accounts; i++){
+        account_print((account*)g_list_nth_data(globals->accounts, i));
+    }
     // unlock all
+    // for (int i = 0; i < globals->num_accounts; i++){
+    //     account_read_unlock((account*)g_list_nth_data(globals->accounts, i));
+    // }
+    rwlock_release_read(&(globals->account_lock));
+}
+
+f_status_t account_print_all(){
+    printf("Current Bank Status\n");
+    // lock all
+    rwlock_acquire_read(&(globals->account_lock));
+    // lock global is enough? need account unlocked for get functions
+    // for (int i = 0; i < globals->num_accounts; i++){
+    //     account_read_lock((account*)g_list_nth_data(globals->accounts, i));
+    // }
+    // print all
+    for (int i = 0; i < globals->num_accounts; i++){
+        account_print((account*)g_list_nth_data(globals->accounts, i));
+    }
+    // unlock all
+    // for (int i = 0; i < globals->num_accounts; i++){
+    //     account_read_unlock((account*)g_list_nth_data(globals->accounts, i));
+    // }
+    rwlock_release_read(&(globals->account_lock));
 }
 
