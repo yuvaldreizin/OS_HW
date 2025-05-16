@@ -48,6 +48,8 @@ struct globals {
     account_t *bank_account; // the bank account
     rwlock_t log_lock;
     char *log_file;
+    pthread_t *atm_threads;
+    pthread_t *bank_thread;
 };
 
 typedef struct globals globals_t;
@@ -68,6 +70,8 @@ void global_init(){
     }
     FILE *log_file = fopen(globals->log_file, "w");
     fclose(log_file);
+    globals->atm_threads = NULL;
+    globals->bank_thread = NULL;
 }
 
 void global_free(){
