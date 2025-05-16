@@ -46,6 +46,8 @@ struct globals {
     int num_accounts;
     int num_atms;
     account_t *bank_account; // the bank account
+    rwlock_t account_lock;
+    rwlock_t atm_lock;
     rwlock_t log_lock;
     char *log_file;
 };
@@ -58,6 +60,8 @@ void global_init(){
     globals->accounts = NULL;
     globals->atms = NULL;
     globals->num_accounts = 0;
+    rwlock_init(&(globals->account_lock));
+    rwlock_init(&(globals->atm_lock));
     globals->num_atms = 0;
     globals->bank_account = account_init(0, 0, 0); // bank account
     rwlock_init(&(globals->log_lock));
@@ -77,6 +81,8 @@ void global_free(){
     // TODO - Free all ATMs
     g_list_free_full(globals->atms, free);
     rwlock_destroy(&(globals->log_lock));
+    rwlock_destroy(&(globals->atm_lock));
+    rwlock_destroy(&(globals->account_lock));
     free(globals);
     globals = NULL;
 }

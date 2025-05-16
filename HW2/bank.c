@@ -10,7 +10,7 @@ void run_bank(){
     while(finished < globals->num_atms){
         usleep(500000);
         counter++;
-        lock_all_accounts();
+        lock_all_accounts();    // split to read write in comment if loack_all for read is needed (default is write for this instance)
         printf("\033[2J]");
         printf("\033[1:1H");
         // go over all accounts
@@ -22,11 +22,11 @@ void run_bank(){
             if (counter == 6){ // every 3 seconds
                 // generate a random number
                 int precentage = rand() % 4 + 1;
-                int commission = account_get_balance(account) * precentage / 100;
+                int commission = account_get_balance(account) * precentage / 100;       // use -> not get beacause account is locked
                 account->balance -= commission;
                 globals->bank_account->balance += commission;
                 fprintf("Bank: commissions of %d %% were charged, bank gained %d from account %d\n",
-                    precentage, commission, account_get_id(account));
+                    precentage, commission, account_get_id(account));       // use -> not get beacause account is locked
             }
         }
         counter = counter % 6;
