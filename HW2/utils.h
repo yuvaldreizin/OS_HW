@@ -45,6 +45,7 @@ struct globals {
     GList *atms;
     int num_accounts;
     int num_atms;
+    account_t *bank_account; // the bank account
     rwlock_t account_lock;
     rwlock_t atm_lock;
     rwlock_t log_lock;
@@ -55,13 +56,14 @@ typedef struct globals globals_t;
 extern globals_t *globals;
 
 void global_init(){
-    globals = MALLOC_VALIDATED(globals_t, 1);
+    globals = MALLOC_VALIDATED(globals_t, sizeof(globals_t));
     globals->accounts = NULL;
     globals->atms = NULL;
     globals->num_accounts = 0;
     rwlock_init(&(globals->account_lock));
     rwlock_init(&(globals->atm_lock));
     globals->num_atms = 0;
+    globals->bank_account = account_init(0, 0, 0); // bank account
     rwlock_init(&(globals->log_lock));
     globals->log_file = "log.txt";
     // remove existing log file if it exists
