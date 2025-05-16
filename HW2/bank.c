@@ -46,7 +46,7 @@ void run_bank(){
         usleep(500000);
         check_atms();
         counter++;
-        lock_all_accounts();
+        lock_all_accounts();    // split to read write in comment if loack_all for read is needed (default is write for this instance)
         printf("\033[2J]");
         printf("\033[1:1H");
         // go over all accounts
