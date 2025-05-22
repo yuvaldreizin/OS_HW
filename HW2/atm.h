@@ -8,24 +8,18 @@
 #include <utils.h>
 #define ARGS_NUM_MAX 4
 
-typedef enum
-{
-    NONE,
-    REQUEST,
-    APPROVED
-} delete_status;
-
 struct delete_request
 {
     int source_id;
-    delete_status status;
+    int target_id;
 };
 typedef struct delete_request delete_request_t;
 struct atm
 {
     int id;
     char * file;
-    delete_request_t delete_req;
+    delete_request_t *delete_req;
+    rwlock_t lock;
 };
 typedef struct *atm atm_t;
 

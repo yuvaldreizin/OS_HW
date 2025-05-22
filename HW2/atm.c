@@ -12,17 +12,23 @@ atm_t atm_init(int id, char * file)
     {
         ERROR_EXIT("Error opening file");
     }
-    new_atm->delete_req.source_id = 0;
-    new_atm->delete_req.status = NONE;
+    new_atm->delete_req= NULL;
+    rwlock_init(&(new_atm->lock));
 }
 
 void destroy_atm(atm_t atm)
 {
     if (atm != NULL)
     {
+        if (atm->delete_req != NULL)
+        {
+            free(atm->delete_req);
+            atm->delete_req = NULL;
+        }
         fclose(atm->file);
         free(atm);
-    }
+        atm = NULL;
+    }  
 }
 
 command_t read_next_command(atm_t atm){
@@ -83,7 +89,7 @@ void execute_command(atm_t atm, char *cmd)
             account_t(cmd->args[0], cmd->args[1], cmd->args[2], c, atm->id);
             break;
         case 'C':
-            account_c(cmd->args[0], atm->id);
+            delete_atm(cmd->args[0], atm->id);
             break;
         default:
             ERROR_EXIT("Invalid command");
@@ -95,8 +101,14 @@ void execute_command(atm_t atm, char *cmd)
 void run_atm(atm_t atm)
 {
     command_t cmd;
-    while (atm->delete_req.status != APPROVED)
+    while (1)
     {
+        rwlock_acquire_read(&(atm->lock));
+        if (atm->delete_req != NULL){
+            rwlock_release_read(&(atm->lock));
+            break;
+        }
+        rwlock_release_read(&(atm->lock));
         usleep(100000);
         if ((cmd = read_next_command(atm)) != NULL){
             break;
@@ -105,30 +117,24 @@ void run_atm(atm_t atm)
         sleep(1)
     }
     // TODO - lock ATMs struct and specific ATM
-    destroy_atm(atm);
-    if (atm->delete_req.status == APPROVED)
-        globals->atms = g_list_remove(globals->atms, atm);
-    // TODO - free ATM struct
+    globals->atms[atm->id] = NULL;
     finished++;
 }
 
 void delete_atm(int target_id, int source_id)
 {
-    // Search for ATM ID
-    GList *l;
-    for (l = globals->atms; l != NULL; l = l->next)
+    if (target_id > globals->num_atms)
     {
-        atm_t atm = (atm_t *)l->data;
-        if (atm->id == target_id)
-        {
-            // ATM found, mark for deletion
-            atm->delete_req.status = REQUEST;
-            atm->delete_req.source_id = source_id;
-            return;
-        }
+        // ATM not found, print error message
+        log_lock();
+        fprintf(globals->log_file, "Error %d: Your delete operation failed - ATM ID %d does not exist\n", source_id, target_id);
+        log_unlock();
+        return;
     }
-    // ATM not found, print error message
-    log_lock();
-    fprintf(globals->log_file, "Error %d: Your transaction failed - ATM ID %d does not exist\n", source_id, target_id);
-    log_unlock();
+    delete_request_t *delete_req = MALLOC_VALIDATED(struct delete_request, sizeof(struct delete_request));
+    delete_req->source_id = source_id;
+    delete_req->target_id = target_id;
+    rwlock_acquire_write(&(globals->delete_lock));
+    globals->delete_requests = g_list_append(globals->delete_requests, delete_req);
+    rwlock_release_write(&(globals->delete_lock));
 }
