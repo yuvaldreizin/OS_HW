@@ -1,8 +1,9 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <glib.h>
 #include <unistd.h>
+#include "linked_list.h"
+#include "atm.h"
 
 /*=============================================================================
 * error handling - some useful macros and examples of error handling,
@@ -41,10 +42,9 @@ typedef enum {
 =============================================================================*/
 
 struct globals {
-    GList *accounts;
-    GList *delete_requests;
+    LinkedList *accounts;
+    LinkedList *delete_requests;
     atm_t *atms;
-    int num_accounts;
     int num_atms;
     account *bank_account; // the bank account
     rwlock_t account_lock;
@@ -61,9 +61,8 @@ extern globals_t *globals;
 
 void global_init(){
     globals = MALLOC_VALIDATED(globals_t, sizeof(globals_t));
-    globals->accounts = NULL;
+    globals->accounts = linked_list_init();
     globals->atms = NULL;
-    globals->num_accounts = 0;
     rwlock_init(&(globals->account_lock));
     rwlock_init(&(globals->atm_lock));
     rwlock_init(&(globals->delete_lock));
@@ -79,14 +78,16 @@ void global_init(){
     fclose(log_file);
     globals->atm_threads = NULL;
     globals->bank_thread = NULL;
-    globals->delete_requests = NULL;
+    globals->delete_requests = linked_list_init();
 }
 
 void global_free(){
     if (globals == NULL) return;
     // TODO - Free all accounts
-    g_list_free_full(globals->accounts, free);
-    g_list_free_full(globals->delete_requests, free);
+    rwlock_acquire_write(&(globals->account_lock));
+    linked_list_free(globals->accounts, account_free);
+    rwlock_release_write(&(globals->account_lock));
+    linked_list_free(globals->delete_requests, free);
     // TODO - Free all ATMs
     for (int i = 0; i < globals->num_atms; i++) {
         destroy_atm(globals->atms[i]);

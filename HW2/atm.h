@@ -21,7 +21,7 @@ struct atm
     delete_request_t *delete_req;
     rwlock_t lock;
 };
-typedef struct *atm atm_t;
+typedef struct atm *atm_t;
 
 struct command
 {
@@ -41,7 +41,7 @@ typedef struct command *command_t;
 atm_t atm_init(int id, char * file);
 void destroy_atm(atm_t atm);
 command_t read_next_command(atm_t atm);
-fstatus_t execute_command(atm_t atm, char *cmd);
+f_status_t execute_command(atm_t atm, char *cmd);
 void run_atm(atm_t atm);
 void delete_atm(int target_id, int source_id);
 

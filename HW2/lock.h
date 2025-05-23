@@ -8,8 +8,7 @@ typedef struct {
     pthread_cond_t readers_ok;
     pthread_cond_t writers_ok;
     int readers;         // current active readers
-    int writers;         // current active writers (0 or 1)
-    int waiting_writers; // writers waiting for the lock
+    int writers;         // current active writers
 } rwlock_t;
 
 void rwlock_init(rwlock_t *rw);

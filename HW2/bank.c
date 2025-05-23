@@ -1,6 +1,7 @@
 #include "utils.h"
 #include "account.h"
 #include "atm.h"
+#include <stdbool.h>
 
 //=============================================================================
 // global variables
@@ -9,7 +10,7 @@ int finished = 0;
 //=============================================================================
 //functions
 void run_bank();
-void charge_commission(account_t *account);
+void charge_commission(account *account);
 void check_delete_reqs();
 
 int main(int argc, char *argv[])
@@ -49,13 +50,13 @@ void run_bank(){
         printf("\033[2J]");
         printf("\033[1:1H");
         // go over all accounts
-        GList *l;
-        for (l = globals->accounts; l != NULL; l = l->next)
+        Node *l;
+        for (l = globals->accounts->head; l != NULL; l = l->next)
         {
-            account_t *account = (account_t *)l->data;
-            account_print(account);
+            account *acnt = (account *)l->data;
+            account_print(acnt);
             if (counter == 6){ // every 3 seconds
-                charge_commission(account);
+                charge_commission(acnt);
             }
         }
         counter = counter % 6;
@@ -63,7 +64,7 @@ void run_bank(){
     }
 }
 
-void charge_commission(account_t *account){
+void charge_commission(account *account){
     // generate a random number
     int precentage = rand() % 4 + 1;
     int commission = account->balance * precentage / 100;
@@ -76,11 +77,11 @@ void charge_commission(account_t *account){
 void check_delete_reqs(){
     // check if any ATM is marked for deletion
     rwlock_acquire_write(&(globals->delete_lock));
-    GList *l;
-    for (l = globals->delete_requests; l != NULL; l = l->next)
+    Node *l;
+    for (l = globals->delete_requests->head; l != NULL; l = l->next)
     {
         delete_request_t *curr_delete_req = (delete_request_t *)l->data;
-        int target_atm = globals->atms[curr_delete_req->target_id];
+        atm_t target_atm = globals->atms[curr_delete_req->target_id];
         bool added = false;
         if (target_atm){
             rwlock_acquire_write(&(target_atm->lock));
@@ -97,7 +98,7 @@ void check_delete_reqs(){
             log_unlock();
         }
         rwlock_acquire_write(&(globals->delete_lock));
-        globals->delete_requests = g_list_remove(globals->delete_requests, curr_delete_req);
+        globals->delete_requests = linked_list_remove(globals->delete_requests, curr_delete_req);
         rwlock_release_write(&(globals->delete_lock));
         free(curr_delete_req);
     }

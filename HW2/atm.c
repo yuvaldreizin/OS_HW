@@ -135,6 +135,6 @@ void delete_atm(int target_id, int source_id)
     delete_req->source_id = source_id;
     delete_req->target_id = target_id;
     rwlock_acquire_write(&(globals->delete_lock));
-    globals->delete_requests = g_list_append(globals->delete_requests, delete_req);
+    globals->delete_requests = linked_list_add(globals->delete_requests, delete_req);
     rwlock_release_write(&(globals->delete_lock));
 }
