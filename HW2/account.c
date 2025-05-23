@@ -10,10 +10,10 @@ account *account_init(int id, int pass, int balance){
 }
 
 
-void account_free(account *account){
-    if(account == NULL) return;
-    rwlock_destroy(&(account->lock));
-    free(account);
+void account_free(account *acnt){
+    if(acnt == NULL) return;
+    rwlock_destroy(&(acnt->lock));
+    free(acnt);
 }
 
 // Better delete, messes lock handling
@@ -60,10 +60,12 @@ void account_write_unlock(account *account){
     rwlock_release_write(&(account->lock));
 }
 
-void *accounts_compare(account *acnt1, account *acnt2){
+int accounts_compare(void *acnt1, void *acnt2){
     // no locks because id doesn't change unless deleted + global account list is locked
-    if (acnt1->id < acnt2->id) return -1;
-    else if (acnt1->id > acnt2->id) return 1;
+    account *acnt1_casted = (account *)acnt1;
+    account *acnt2_casted = (account *)acnt2;
+    if (acnt1_casted->id < acnt2_casted->id) return -1;
+    else if (acnt1_casted->id > acnt2_casted->id) return 1;
     else return 0;
 }
 
@@ -95,7 +97,7 @@ account *account_check_id_and_pass_read(int id, int pass, int atm_id){
     // check pass
     if (acnt->pass != pass){
         log_lock();
-        fprintf(globals->log_file, "Error %s: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
+        fprintf(globals->log_file, "Error %d: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
         log_unlock();
         account_read_unlock(acnt);
         return NULL;
@@ -132,7 +134,7 @@ account *account_check_id_and_pass_write(int id, int pass, int atm_id){
     // check pass
     if (acnt->pass != pass){
         log_lock();
-        fprintf(globals->log_file, "Error %s: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
+        fprintf(globals->log_file, "Error %d: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
         log_unlock();
         account_write_unlock(acnt);
         return NULL;
@@ -173,7 +175,7 @@ f_status_t account_d(int id, int pass, int amount, int atm_id){
     account_write_unlock(acnt);
     // write to log
     log_lock();
-    fprintf(globals->log_file, "%s: Account %d new balance is %d after %d $ was deposited\n", atm_id, id, balance, amount);
+    fprintf(globals->log_file, "%d: Account %d new balance is %d after %d $ was deposited\n", atm_id, id, balance, amount);
     log_unlock();
     return SUCCESS;
 }
@@ -196,7 +198,7 @@ f_status_t account_w(int id, int pass, int amount, int atm_id){
     balance -= amount;
     // write to log
     log_lock();
-    fprintf(globals->log_file, "%s: Account %d new balance is %d after %d $ was withdrawn\n", atm_id, id, balance, amount);
+    fprintf(globals->log_file, "%d: Account %d new balance is %d after %d $ was withdrawn\n", atm_id, id, balance, amount);
     log_unlock();
     return SUCCESS;
 }
@@ -253,16 +255,17 @@ f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id){
         return FAILURE;
     }
     acnt->balance -= amount;
-    int balance = acnt->balance;
+    balance -= amount;
     to_acnt->balance += amount;
     int to_balance = to_acnt->balance;
     account_write_unlock(to_acnt);
     account_write_unlock(acnt);
     // write to log
     log_lock();
-    fprintf(globals->log_file, "%d: Transfer <amount> from account <source account> to account <target account> new account balance is <source account balance> new target account balance is <target account balance>\n",
+    fprintf(globals->log_file, "%d: Transfer %d from account %d to account %d new account balance is %d new target account balance is %d\n",
         atm_id, amount, id, to_id, balance, to_balance);
     log_unlock();
+    return SUCCESS;
 }
 
 

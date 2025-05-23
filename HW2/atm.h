@@ -1,11 +1,11 @@
 #ifndef ATM_H
 #define ATM_H
 
+#include "./utils.h"
 #include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
 #include "account.h"
-#include <utils.h>
 #define ARGS_NUM_MAX 4
 
 struct delete_request
@@ -38,10 +38,12 @@ typedef enum
 
 typedef struct command *command_t;
 
+// extern globals_t *globals;
+
 atm_t atm_init(int id, char * file);
 void destroy_atm(atm_t atm);
 command_t read_next_command(atm_t atm);
-f_status_t execute_command(atm_t atm, char *cmd);
+f_status_t execute_command(atm_t atm, command_t cmd);
 void run_atm(atm_t atm);
 void delete_atm(int target_id, int source_id);
 
