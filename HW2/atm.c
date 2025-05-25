@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "atm.h"
 
 extern int finished;
@@ -11,7 +12,7 @@ atm_t atm_init(int id, char * file){
         ERROR_EXIT("Error opening file");
     }
     new_atm->delete_req= NULL;
-    rwlock_init(&(new_atm->lock));
+    rwlock_init((new_atm->lock));
     return new_atm;
 }
 
@@ -25,6 +26,7 @@ void destroy_atm(atm_t atm)
             atm->delete_req = NULL;
         }
         fclose(atm->file);
+        rwlock_destroy(atm->lock);
         free(atm);
         atm = NULL;
     }  
@@ -100,15 +102,19 @@ void execute_command(atm_t atm, command_t cmd)
 void run_atm(atm_t atm)
 {
     command_t cmd;
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 100000000;  // (0.1 seconds)
     while (1)
     {
-        rwlock_acquire_read(&(atm->lock));
+        rwlock_acquire_read((atm->lock));
         if (atm->delete_req != NULL){
-            rwlock_release_read(&(atm->lock));
+            rwlock_release_read((atm->lock));
             break;
         }
-        rwlock_release_read(&(atm->lock));
-        usleep(100000);
+        rwlock_release_read((atm->lock));
+        // usleep(100000);
+        nanosleep(&ts, NULL);
         if ((cmd = read_next_command(atm)) != NULL){
             break;
         }
@@ -133,7 +139,7 @@ void delete_atm(int target_id, int source_id)
     delete_request_t *delete_req = MALLOC_VALIDATED(struct delete_request, sizeof(struct delete_request));
     delete_req->source_id = source_id;
     delete_req->target_id = target_id;
-    rwlock_acquire_write(&(globals->delete_lock));
+    rwlock_acquire_write((globals->delete_lock));
     linked_list_add(globals->delete_requests, delete_req);
-    rwlock_release_write(&(globals->delete_lock));
+    rwlock_release_write((globals->delete_lock));
 }

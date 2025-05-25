@@ -2,10 +2,13 @@
 #define ATM_H
 
 #include "./utils.h"
+#include <unistd.h>
 #include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
 #include "account.h"
+#include <time.h>
+
 #define ARGS_NUM_MAX 4
 struct command
 {

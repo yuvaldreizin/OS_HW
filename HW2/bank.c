@@ -1,7 +1,9 @@
+#define _POSIX_C_SOURCE 200809L
 #include "./utils.h"
 #include "account.h"
 #include "atm.h"
 #include <stdbool.h>
+#include <time.h>
 
 //=============================================================================
 // global variables
@@ -59,8 +61,12 @@ void *run_bank_aux(void *arg)
 
 void run_bank(){
     int counter = 0;
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 500000000;  // (0.5 seconds)
     while(finished < globals->num_atms){
-        usleep(500000);
+        // usleep(500000);
+        nanosleep(&ts, NULL);
         check_delete_reqs();
         counter++;
         lock_all_accounts();    // split to read write in comment if loack_all for read is needed (default is write for this instance)
@@ -93,7 +99,7 @@ void charge_commission(account *account){
 
 void check_delete_reqs(){
     // check if any ATM is marked for deletion
-    rwlock_acquire_write(&(globals->delete_lock));
+    rwlock_acquire_write((globals->delete_lock));
     Node *l;
     for (l = globals->delete_requests->head; l != NULL; l = l->next)
     {
@@ -101,13 +107,13 @@ void check_delete_reqs(){
         atm_t target_atm = globals->atms[curr_delete_req->target_id];
         bool added = false;
         if (target_atm){
-            rwlock_acquire_write(&(target_atm->lock));
+            rwlock_acquire_write((target_atm->lock));
             if (target_atm->delete_req == NULL) // atm isn't marked for deletion
             {
                 target_atm->delete_req = curr_delete_req;
                 added = true;
             }
-            rwlock_release_write(&(target_atm->lock));
+            rwlock_release_write((target_atm->lock));
         }
         if (!added){
             log_lock();
@@ -115,9 +121,9 @@ void check_delete_reqs(){
                  curr_delete_req->source_id, curr_delete_req->target_id);
             log_unlock();
         }
-        rwlock_acquire_write(&(globals->delete_lock));
+        rwlock_acquire_write((globals->delete_lock));
         linked_list_remove(globals->delete_requests, curr_delete_req);
-        rwlock_release_write(&(globals->delete_lock));
+        rwlock_release_write((globals->delete_lock));
         free(curr_delete_req);
     }
     for (int i = 1; i <= globals->num_atms; i++){

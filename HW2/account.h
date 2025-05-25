@@ -11,9 +11,9 @@
 
 account *account_init(int id, int pass, int balance);
 void account_free(void *acc);
-int account_get_id(account *account);
-int account_get_pass(account *account);
-int account_get_balance(account *account);
+// int account_get_id(account *account);
+// int account_get_pass(account *account);
+// int account_get_balance(account *account);
 void account_read_lock(account *account);
 void account_read_unlock(account *account);
 void account_write_lock(account *account);

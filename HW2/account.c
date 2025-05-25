@@ -1,11 +1,12 @@
+#define _POSIX_C_SOURCE 200809L
 #include "account.h"
 
 account *account_init(int id, int pass, int balance){
-    account *acnt = MALLOC_VALIDATED(account, 1);
+    account *acnt = MALLOC_VALIDATED(account, sizeof(account));
     acnt->id = id;
     acnt->pass = pass;
     acnt->balance = balance;
-    rwlock_init(&(acnt->lock));
+    rwlock_init(acnt->lock);
     return acnt;
 }
 
@@ -13,7 +14,7 @@ account *account_init(int id, int pass, int balance){
 void account_free(void* acc){
     account * acnt = (account *)acc;
     if (acnt == NULL) return;
-    rwlock_destroy(&(acnt->lock));
+    rwlock_destroy((acnt->lock));
     free(acnt);
 }
 
@@ -34,31 +35,31 @@ void account_free(void* acc){
 // }
 
 
-int account_get_balance(account *account){
-    account_read_lock(account);
-    int balance = account->balance;
-    account_read_unlock(account);
-    return balance;
-}
+// int account_get_balance(account *account){
+//     account_read_lock(account);
+//     int balance = account->balance;
+//     account_read_unlock(account);
+//     return balance;
+// }
 
 
 void account_read_lock(account *account){
-    rwlock_acquire_read(&(account->lock));
+    rwlock_acquire_read((account->lock));
 }
 
 
 void account_read_unlock(account *account){
-    rwlock_release_read(&(account->lock));
+    rwlock_release_read((account->lock));
 }
 
 
 void account_write_lock(account *account){
-    rwlock_acquire_write(&(account->lock));
+    rwlock_acquire_write((account->lock));
 }
 
 
 void account_write_unlock(account *account){
-    rwlock_release_write(&(account->lock));
+    rwlock_release_write((account->lock));
 }
 
 int accounts_compare(void *acnt1, void *acnt2){
@@ -71,18 +72,18 @@ int accounts_compare(void *acnt1, void *acnt2){
 }
 
 account *account_check_id_read(int id){ 
-    rwlock_acquire_read(&(globals->account_lock));
+    rwlock_acquire_read((globals->account_lock));
     Node *l;
     for (l = globals->accounts->head; l != NULL; l=l->next){
         account *acnt = (account*)l->data;
         if(acnt->id == id){
             // lock account for function and release global list
             account_read_lock(acnt);
-            rwlock_release_read(&(globals->account_lock));
+            rwlock_release_read((globals->account_lock));
             return acnt;
         }
     }
-    rwlock_release_read(&(globals->account_lock));
+    rwlock_release_read((globals->account_lock));
     return NULL;
 }
 
@@ -108,18 +109,18 @@ account *account_check_id_and_pass_read(int id, int pass, int atm_id){
 
 
 account *account_check_id_write(int id){ 
-    rwlock_acquire_read(&(globals->account_lock));
+    rwlock_acquire_read((globals->account_lock));
     Node *l;
     for (l = globals->accounts->head; l != NULL; l=l->next){
         account *acnt = (account*)l->data;
         if(acnt->id == id){
             // lock account for function and release global list
             account_write_lock(acnt);
-            rwlock_release_read(&(globals->account_lock));
+            rwlock_release_read((globals->account_lock));
             return acnt;
         }
     }
-    rwlock_release_read(&(globals->account_lock));
+    rwlock_release_read((globals->account_lock));
     return NULL;
 }
 
@@ -154,10 +155,10 @@ f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
         return INVALID_ID;
     }
     // add account
-    rwlock_acquire_write(&(globals->account_lock));
+    rwlock_acquire_write((globals->account_lock));
     account *acnt = account_init(id, pass, initial_amount);
     linked_list_sorted_insert(globals->accounts, acnt, accounts_compare);
-    rwlock_release_write(&(globals->account_lock));
+    rwlock_release_write((globals->account_lock));
     // write to log
     log_lock();
     fprintf(globals->log_file, "%d: New account id is %d with password %d and initial balance %d\n", atm_id, id, pass, initial_amount);
@@ -223,10 +224,10 @@ f_status_t account_q(int id, int pass, int atm_id){
     account *acnt = account_check_id_and_pass_write(id, pass, atm_id);
     if (!acnt) return FAILURE;
     // delete account
-    int balance = account_get_balance(acnt);
-    rwlock_acquire_write(&(globals->account_lock));
+    int balance = acnt->balance;
+    rwlock_acquire_write((globals->account_lock));
     linked_list_remove(globals->accounts, acnt);
-    rwlock_release_write(&(globals->account_lock));
+    rwlock_release_write((globals->account_lock));
     account_write_unlock(acnt);
 
     account_free(acnt);
@@ -281,7 +282,7 @@ f_status_t account_print(account *acnt){
 }
 
 void lock_all_accounts(){
-    rwlock_acquire_write(&(globals->account_lock));
+    rwlock_acquire_write((globals->account_lock));
     Node *l;
     for (l = globals->accounts->head; l != NULL; l=l->next){
         account *acnt = (account*)l->data;
@@ -295,5 +296,5 @@ void unlock_all_accounts(){
         account *acnt = (account*)l->data;
         account_write_unlock(acnt);
     }
-    rwlock_release_write(&(globals->account_lock));
+    rwlock_release_write((globals->account_lock));
 }
