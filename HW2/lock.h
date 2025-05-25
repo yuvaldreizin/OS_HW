@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 #include <stdlib.h>
-
+#include <stdio.h>  // for debugging
 
 struct rwlock{
     pthread_mutex_t *lock;
@@ -14,7 +14,7 @@ struct rwlock{
 };
 typedef struct rwlock *rwlock_t;
 
-void rwlock_init(rwlock_t rw);
+rwlock_t rwlock_init();
 void rwlock_acquire_read(rwlock_t rw);
 void rwlock_release_read(rwlock_t rw);
 void rwlock_acquire_write(rwlock_t rw);

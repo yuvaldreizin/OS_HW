@@ -6,7 +6,7 @@ account *account_init(int id, int pass, int balance){
     acnt->id = id;
     acnt->pass = pass;
     acnt->balance = balance;
-    rwlock_init(acnt->lock);
+    acnt->lock = rwlock_init();
     return acnt;
 }
 

@@ -12,7 +12,8 @@ atm_t atm_init(int id, char * file){
         ERROR_EXIT("Error opening file");
     }
     new_atm->delete_req= NULL;
-    rwlock_init((new_atm->lock));
+    new_atm->lock = rwlock_init();
+    // printf("ATM %d lock initialized at address: %p\n", id, (void *)new_atm->lock);
     return new_atm;
 }
 
@@ -104,9 +105,11 @@ void run_atm(atm_t atm)
     command_t cmd;
     struct timespec ts;
     ts.tv_sec = 0;
-    ts.tv_nsec = 100000000;  // (0.1 seconds)
+    ts.tv_nsec = 100000000;  // (0.1 seconds) 
     while (1)
     {
+        // printf("ATM %d is running\n", atm->id);
+        // printf("ATM %d lock address: %p\n", atm->id, (void *)atm->lock);
         rwlock_acquire_read((atm->lock));
         if (atm->delete_req != NULL){
             rwlock_release_read((atm->lock));

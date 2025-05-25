@@ -5,12 +5,12 @@ void global_init(){
     globals = MALLOC_VALIDATED(globals_t, sizeof(globals_t));
     globals->accounts = linked_list_init();
     globals->atms = NULL;
-    rwlock_init((globals->account_lock));
-    rwlock_init((globals->atm_lock));
-    rwlock_init((globals->delete_lock));
+    globals->account_lock = rwlock_init();
+    globals->atm_lock = rwlock_init();
+    globals->delete_lock = rwlock_init();
     globals->num_atms = 0;
     globals->bank_account = account_init(0, 0, 0); // bank account
-    rwlock_init((globals->log_lock));
+    globals->log_lock = rwlock_init();
     // remove existing log file if it exists
     if (access(LOG_FILE_NAME, F_OK) != -1) {
         remove(LOG_FILE_NAME);
@@ -35,6 +35,7 @@ void global_free(){
     rwlock_destroy((globals->log_lock));
     rwlock_destroy((globals->atm_lock));
     rwlock_destroy((globals->account_lock));
+    rwlock_destroy((globals->delete_lock));
     if (globals->bank_account != NULL) {
         account_free(globals->bank_account);
         globals->bank_account = NULL;

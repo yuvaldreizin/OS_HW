@@ -1,17 +1,18 @@
 #define _POSIX_C_SOURCE 200809L
 #include "lock.h"
 
-void rwlock_init(rwlock_t rw) {
-    rw = (rwlock_t)malloc(sizeof(struct rwlock));
+rwlock_t rwlock_init() {
+    rwlock_t rw = (rwlock_t)malloc(sizeof(struct rwlock));
     rw->lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
     rw->readers_ok = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
     rw->writers_ok = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
-
+    
     pthread_mutex_init(rw->lock, NULL);
     pthread_cond_init(rw->readers_ok, NULL);
     pthread_cond_init(rw->writers_ok, NULL);
     rw->readers = 0;
     rw->writers = 0;
+    return rw;
 }
 
 
