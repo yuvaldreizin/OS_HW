@@ -65,7 +65,6 @@ void run_bank(){
     ts.tv_sec = 0;
     ts.tv_nsec = 500000000;  // (0.5 seconds)
     while(finished < globals->num_atms){
-        // usleep(500000);
         nanosleep(&ts, NULL);
         check_delete_reqs();
         counter++;

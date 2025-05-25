@@ -1,5 +1,6 @@
 #ifndef ATM_H
 #define ATM_H
+#define _POSIX_C_SOURCE 200809L
 
 #include "./utils.h"
 #include <unistd.h>

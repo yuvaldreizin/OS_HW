@@ -13,7 +13,6 @@ atm_t atm_init(int id, char * file){
     }
     new_atm->delete_req= NULL;
     new_atm->lock = rwlock_init();
-    // printf("ATM %d lock initialized at address: %p\n", id, (void *)new_atm->lock);
     return new_atm;
 }
 
@@ -52,6 +51,7 @@ command_t read_next_command(atm_t atm){
             ERROR_EXIT("Read error");
         }
     }
+    // ------ RUNTIME BUG - CAN'T GET HERE ------
     // Parse the line into command
     command_t new_command = MALLOC_VALIDATED(struct command, sizeof(struct command));
 	char* delimiters = " \n";
@@ -108,15 +108,12 @@ void run_atm(atm_t atm)
     ts.tv_nsec = 100000000;  // (0.1 seconds) 
     while (1)
     {
-        // printf("ATM %d is running\n", atm->id);
-        // printf("ATM %d lock address: %p\n", atm->id, (void *)atm->lock);
         rwlock_acquire_read((atm->lock));
         if (atm->delete_req != NULL){
             rwlock_release_read((atm->lock));
             break;
         }
         rwlock_release_read((atm->lock));
-        // usleep(100000);
         nanosleep(&ts, NULL);
         if ((cmd = read_next_command(atm)) != NULL){
             break;
@@ -146,3 +143,4 @@ void delete_atm(int target_id, int source_id)
     linked_list_add(globals->delete_requests, delete_req);
     rwlock_release_write((globals->delete_lock));
 }
+
