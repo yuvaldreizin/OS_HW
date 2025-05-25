@@ -1,11 +1,15 @@
 #ifndef ATM_H
 #define ATM_H
+#define _POSIX_C_SOURCE 200809L
 
 #include "./utils.h"
+#include <unistd.h>
 #include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
 #include "account.h"
+#include <time.h>
+
 #define ARGS_NUM_MAX 4
 struct command
 {

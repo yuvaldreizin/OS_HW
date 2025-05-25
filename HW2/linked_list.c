@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "linked_list.h"
 
 LinkedList* linked_list_init() {
