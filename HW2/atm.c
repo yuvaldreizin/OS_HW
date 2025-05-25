@@ -2,18 +2,17 @@
 
 extern int finished;
 
-atm_t atm_init(int id, char * file)
-{
+atm_t atm_init(int id, char * file){
     atm_t new_atm = MALLOC_VALIDATED(struct atm, sizeof(struct atm));
     new_atm->id = id;
-    new_atm->file = file;
-    fopen(new_atm->file, "r");
+    new_atm->file = fopen(file, "r");
     if (new_atm->file == NULL)
     {
         ERROR_EXIT("Error opening file");
     }
     new_atm->delete_req= NULL;
     rwlock_init(&(new_atm->lock));
+    return new_atm;
 }
 
 void destroy_atm(atm_t atm)
@@ -66,7 +65,7 @@ command_t read_next_command(atm_t atm){
     return new_command;
 }
 
-f_status_t execute_command(atm_t atm, command_t cmd)
+void execute_command(atm_t atm, command_t cmd)
 {
     switch (cmd->type)
     {

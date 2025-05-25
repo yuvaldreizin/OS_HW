@@ -9,21 +9,8 @@
 * Structures
 * =============================================================================*/
 
-typedef struct account{
-    int id;
-    int pass;
-    int balance;
-    rwlock_t lock;
-} account;
-
-// extern globals_t *globals;
-
-/*=============================================================================
-* Structures
-* =============================================================================*/
-
 account *account_init(int id, int pass, int balance);
-void account_free(account *account);
+void account_free(void *acc);
 int account_get_id(account *account);
 int account_get_pass(account *account);
 int account_get_balance(account *account);

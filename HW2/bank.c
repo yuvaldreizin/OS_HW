@@ -10,6 +10,8 @@ int finished = 0;
 //=============================================================================
 //functions
 void run_bank();
+void *run_bank_aux(void *arg);
+void *run_atm_aux(void *atm_ptr);
 void charge_commission(account *account);
 void check_delete_reqs();
 
@@ -17,28 +19,43 @@ int main(int argc, char *argv[])
 {
     // globals init
     global_init();
-    globals->atm_threads = MALLOC_VALIDATED(pthread_t ,sizeof(pthread_t) * (argc)); // zero is not used
-    globals->atms = MALLOC_VALIDATED(struct atm, sizeof(struct atm) * (argc)); // zero is not used
+    globals->atm_threads = MALLOC_VALIDATED(pthread_t* ,sizeof(pthread_t*) * (argc)); // zero is not used
+    globals->atms = MALLOC_VALIDATED(atm_t, sizeof(atm_t) * (argc)); // zero is not used
     globals->num_atms = argc - 1;
     for (int i = 1; i < argc; i++){
         atm_t new_atm = atm_init(i, argv[i]);
         globals->atms[i] = new_atm;
-        if (pthread_create(&globals->atm_threads[i], NULL, run_atm, new_atm) != 0)
+        globals->atm_threads[i] = MALLOC_VALIDATED(pthread_t ,sizeof(pthread_t));
+        if (pthread_create(globals->atm_threads[i], NULL, run_atm_aux, new_atm) != 0)
         {
             ERROR_EXIT("Error creating ATM thread");
         }
     }
     globals->bank_thread = MALLOC_VALIDATED(pthread_t ,sizeof(pthread_t));
-    if (pthread_create(&globals->bank_thread, NULL, run_bank, NULL) != 0)
+    if (pthread_create(globals->bank_thread, NULL, run_bank_aux, NULL) != 0)
     {
         ERROR_EXIT("Error creating bank thread");
     }
     for (int i = 1; i < argc; i++){
-        pthread_join(globals->atm_threads[i], NULL);
+        pthread_join(*globals->atm_threads[i], NULL);
     }
-    pthread_join(globals->bank_thread, NULL);
+    pthread_join(*globals->bank_thread, NULL);
     global_free();
 }
+
+void *run_atm_aux(void *atm_ptr)
+{
+    atm_t atm = (atm_t)atm_ptr;
+    run_atm(atm);
+    return NULL;
+}
+
+void *run_bank_aux(void *arg)
+{
+    run_bank();
+    return NULL;
+}
+
 
 void run_bank(){
     int counter = 0;
@@ -94,11 +111,12 @@ void check_delete_reqs(){
         }
         if (!added){
             log_lock();
-            fprintf(globals->log_file, "Error %d: Your close operation failed - ATM ID %d is already in a closed state\n", globals->delete_requests[i].source_id, i);
+            fprintf(globals->log_file, "Error %d: Your close operation failed - ATM ID %d is already in a closed state\n",
+                 curr_delete_req->source_id, curr_delete_req->target_id);
             log_unlock();
         }
         rwlock_acquire_write(&(globals->delete_lock));
-        globals->delete_requests = linked_list_remove(globals->delete_requests, curr_delete_req);
+        linked_list_remove(globals->delete_requests, curr_delete_req);
         rwlock_release_write(&(globals->delete_lock));
         free(curr_delete_req);
     }
@@ -107,7 +125,7 @@ void check_delete_reqs(){
         if (atm && atm->delete_req != NULL){
             // ATM is marked for deletion
             delete_request_t *atm_delete_req = atm->delete_req;
-            pthread_join(globals->atm_threads[i], NULL);
+            pthread_join(*globals->atm_threads[i], NULL);
             destroy_atm(atm);
             globals->atms[i] = NULL;
             log_lock();

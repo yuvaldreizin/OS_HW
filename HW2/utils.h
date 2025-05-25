@@ -5,13 +5,34 @@
 #include <stdio.h>
 #include "linked_list.h"
 #include "lock.h"
-#include "account.h"
-// #include "atm.h"
 
-// typedef struct atm *atm_t;
-// typedef struct account account;
-// extern account_init;
-// extern account_free;
+
+typedef struct account{
+    int id;
+    int pass;
+    int balance;
+    rwlock_t lock;
+} account;
+
+struct delete_request
+{
+    int source_id;
+    int target_id;
+};
+typedef struct delete_request delete_request_t;
+struct atm
+{
+    int id;
+    FILE *file;
+    delete_request_t *delete_req;
+    rwlock_t lock;
+};
+typedef struct atm *atm_t;
+
+
+extern account* account_init(int id, int pass, int balance);
+extern void account_free(void *acc);
+extern void destroy_atm(atm_t atm);
 
 /*=============================================================================
 * error handling - some useful macros and examples of error handling,
@@ -60,7 +81,7 @@ struct globals {
     rwlock_t log_lock;
     rwlock_t delete_lock;
     FILE *log_file;
-    pthread_t *atm_threads;
+    pthread_t **atm_threads;
     pthread_t *bank_thread;
 };
 
@@ -70,65 +91,9 @@ typedef struct globals globals_t;
 
 extern globals_t *globals;
 
-void global_init(){
-    globals = MALLOC_VALIDATED(globals_t, sizeof(globals_t));
-    globals->accounts = linked_list_init();
-    globals->atms = NULL;
-    rwlock_init(&(globals->account_lock));
-    rwlock_init(&(globals->atm_lock));
-    rwlock_init(&(globals->delete_lock));
-    globals->num_atms = 0;
-    globals->bank_account = (account *)account_init(0, 0, 0); // bank account
-    rwlock_init(&(globals->log_lock));
-    // remove existing log file if it exists
-    if (access(LOG_FILE_NAME, F_OK) != -1) {
-        remove(LOG_FILE_NAME);
-    }
-    globals->log_file = fopen(LOG_FILE_NAME, "w");
-    globals->atm_threads = NULL;
-    globals->bank_thread = NULL;
-    globals->delete_requests = linked_list_init();
-}
-
-void global_free(){
-    if (globals == NULL) return;
-    // TODO - Free all accounts
-    rwlock_acquire_write(&(globals->account_lock));
-    linked_list_free(globals->accounts, account_free);
-    rwlock_release_write(&(globals->account_lock));
-    linked_list_free(globals->delete_requests, free);
-    // TODO - Free all ATMs
-    for (int i = 0; i < globals->num_atms; i++) {
-        destroy_atm(globals->atms[i]);
-    }
-    rwlock_destroy(&(globals->log_lock));
-    rwlock_destroy(&(globals->atm_lock));
-    rwlock_destroy(&(globals->account_lock));
-    if (globals->bank_account != NULL) {
-        account_free(globals->bank_account);
-        globals->bank_account = NULL;
-    }
-    if (globals->atm_threads != NULL) {
-        free(globals->atm_threads);
-        globals->atm_threads = NULL;
-    }
-    if (globals->bank_thread != NULL) {
-        free(globals->bank_thread);
-        globals->bank_thread = NULL;
-    }
-    if (globals->log_file != NULL) {
-        fclose(globals->log_file);
-        globals->log_file = NULL;
-    }
-    free(globals);
-    globals = NULL;
-}
-
-void log_lock(){
-    rwlock_acquire_write(&(globals->log_lock));
-}
-void log_unlock(){
-    rwlock_release_write(&(globals->log_lock));
-}
+void global_init();
+void global_free();
+void log_lock();
+void log_unlock();
 
 #endif // UTILS_H

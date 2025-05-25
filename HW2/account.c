@@ -10,8 +10,9 @@ account *account_init(int id, int pass, int balance){
 }
 
 
-void account_free(account *acnt){
-    if(acnt == NULL) return;
+void account_free(void* acc){
+    account * acnt = (account *)acc;
+    if (acnt == NULL) return;
     rwlock_destroy(&(acnt->lock));
     free(acnt);
 }
@@ -33,12 +34,12 @@ void account_free(account *acnt){
 // }
 
 
-// int account_get_balance(account *account){
-//     account_read_lock(account);
-//     int balance = account->balance;
-//     account_read_unlock(account);
-//     return balance;
-// }
+int account_get_balance(account *account){
+    account_read_lock(account);
+    int balance = account->balance;
+    account_read_unlock(account);
+    return balance;
+}
 
 
 void account_read_lock(account *account){
