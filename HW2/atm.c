@@ -4,7 +4,7 @@ extern int finished;
 
 atm_t atm_init(int id, char * file)
 {
-    atm_t new_atm = MALLOC_VALIDATED(atruct atm, sizeof(struct atm));
+    atm_t new_atm = MALLOC_VALIDATED(struct atm, sizeof(struct atm));
     new_atm->id = id;
     new_atm->file = file;
     fopen(new_atm->file, "r");
@@ -66,7 +66,7 @@ command_t read_next_command(atm_t atm){
     return new_command;
 }
 
-void execute_command(atm_t atm, char *cmd)
+f_status_t execute_command(atm_t atm, command_t cmd)
 {
     switch (cmd->type)
     {
@@ -86,7 +86,7 @@ void execute_command(atm_t atm, char *cmd)
             account_q(cmd->args[0], cmd->args[1], atm->id);
             break;
         case 'T':
-            account_t(cmd->args[0], cmd->args[1], cmd->args[2], c, atm->id);
+            account_t(cmd->args[0], cmd->args[1], cmd->args[2], cmd->args[3], atm->id);
             break;
         case 'C':
             delete_atm(cmd->args[0], atm->id);
@@ -95,7 +95,7 @@ void execute_command(atm_t atm, char *cmd)
             ERROR_EXIT("Invalid command");
     }
     // Free the command
-    free(command);
+    free(cmd);
 }
 
 void run_atm(atm_t atm)
@@ -114,7 +114,7 @@ void run_atm(atm_t atm)
             break;
         }
         execute_command(atm, cmd);
-        sleep(1)
+        sleep(1);
     }
     // TODO - lock ATMs struct and specific ATM
     globals->atms[atm->id] = NULL;
@@ -135,6 +135,6 @@ void delete_atm(int target_id, int source_id)
     delete_req->source_id = source_id;
     delete_req->target_id = target_id;
     rwlock_acquire_write(&(globals->delete_lock));
-    globals->delete_requests = g_list_append(globals->delete_requests, delete_req);
+    linked_list_add(globals->delete_requests, delete_req);
     rwlock_release_write(&(globals->delete_lock));
 }

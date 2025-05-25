@@ -1,8 +1,17 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <glib.h>
 #include <unistd.h>
+#include <stdio.h>
+#include "linked_list.h"
+#include "lock.h"
+#include "account.h"
+// #include "atm.h"
+
+// typedef struct atm *atm_t;
+// typedef struct account account;
+// extern account_init;
+// extern account_free;
 
 /*=============================================================================
 * error handling - some useful macros and examples of error handling,
@@ -32,8 +41,8 @@ static inline void* _validatedMalloc(size_t size)
 
 typedef enum {
     SUCCESS = 0,
-    FAILURE = -1,
-    INVALID_ID = -2,
+    FAILURE = 1,
+    INVALID_ID = 2,
 } f_status_t;
 
 /*=============================================================================
@@ -41,52 +50,53 @@ typedef enum {
 =============================================================================*/
 
 struct globals {
-    GList *accounts;
-    GList *delete_requests;
+    LinkedList *accounts;
+    LinkedList *delete_requests;
     atm_t *atms;
-    int num_accounts;
     int num_atms;
     account *bank_account; // the bank account
     rwlock_t account_lock;
     rwlock_t atm_lock;
     rwlock_t log_lock;
     rwlock_t delete_lock;
-    char *log_file;
+    FILE *log_file;
     pthread_t *atm_threads;
     pthread_t *bank_thread;
 };
 
+#define LOG_FILE_NAME "log.txt"
+
 typedef struct globals globals_t;
+
 extern globals_t *globals;
 
 void global_init(){
     globals = MALLOC_VALIDATED(globals_t, sizeof(globals_t));
-    globals->accounts = NULL;
+    globals->accounts = linked_list_init();
     globals->atms = NULL;
-    globals->num_accounts = 0;
     rwlock_init(&(globals->account_lock));
     rwlock_init(&(globals->atm_lock));
     rwlock_init(&(globals->delete_lock));
     globals->num_atms = 0;
-    globals->bank_account = account_init(0, 0, 0); // bank account
+    globals->bank_account = (account *)account_init(0, 0, 0); // bank account
     rwlock_init(&(globals->log_lock));
-    globals->log_file = "log.txt";
     // remove existing log file if it exists
-    if (access(globals->log_file, F_OK) != -1) {
-        remove(globals->log_file);
+    if (access(LOG_FILE_NAME, F_OK) != -1) {
+        remove(LOG_FILE_NAME);
     }
-    FILE *log_file = fopen(globals->log_file, "w");
-    fclose(log_file);
+    globals->log_file = fopen(LOG_FILE_NAME, "w");
     globals->atm_threads = NULL;
     globals->bank_thread = NULL;
-    globals->delete_requests = NULL;
+    globals->delete_requests = linked_list_init();
 }
 
 void global_free(){
     if (globals == NULL) return;
     // TODO - Free all accounts
-    g_list_free_full(globals->accounts, free);
-    g_list_free_full(globals->delete_requests, free);
+    rwlock_acquire_write(&(globals->account_lock));
+    linked_list_free(globals->accounts, account_free);
+    rwlock_release_write(&(globals->account_lock));
+    linked_list_free(globals->delete_requests, free);
     // TODO - Free all ATMs
     for (int i = 0; i < globals->num_atms; i++) {
         destroy_atm(globals->atms[i]);
@@ -107,7 +117,7 @@ void global_free(){
         globals->bank_thread = NULL;
     }
     if (globals->log_file != NULL) {
-        free(globals->log_file);
+        fclose(globals->log_file);
         globals->log_file = NULL;
     }
     free(globals);
