@@ -115,13 +115,21 @@ void run_atm(atm_t atm)
         }
         rwlock_release_read((atm->lock));
         nanosleep(&ts, NULL);
-        if ((cmd = read_next_command(atm)) != NULL){
+        cmd = read_next_command(atm);
+        fprintf(stderr, "ATM %d: Read command %c with args: ", atm->id, cmd->type);
+        for (int i = 0; i < ARGS_NUM_MAX && cmd->args[i] != 0; i++)
+        {
+            fprintf(stderr, "%d ", cmd->args[i]);
+        }
+        fprintf(stderr, "\n");
+        if (!cmd){
             break;
         }
         execute_command(atm, cmd);
         sleep(1);
     }
     // TODO - lock ATMs struct and specific ATM
+    fprintf(stderr, "ATM %d: finished\n", atm->id);
     globals->atms[atm->id] = NULL;
     finished++;
 }
@@ -133,6 +141,7 @@ void delete_atm(int target_id, int source_id)
         // ATM not found, print error message
         log_lock();
         fprintf(globals->log_file, "Error %d: Your delete operation failed - ATM ID %d does not exist\n", source_id, target_id);
+        fflush(globals->log_file);
         log_unlock();
         return;
     }

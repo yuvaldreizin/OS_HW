@@ -2,3 +2,5 @@
 *.o
 smash
 temp.c
+*.txt
+bank

@@ -90,9 +90,10 @@ account *account_check_id_read(int id){
 account *account_check_id_and_pass_read(int id, int pass, int atm_id){
     account *acnt = account_check_id_read(id);
     // check id
-    if (acnt){
+    if (!acnt){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - account id %d does not exist\n", atm_id, id);
+        fflush(globals->log_file);
         log_unlock();
         return NULL;
     }
@@ -100,6 +101,7 @@ account *account_check_id_and_pass_read(int id, int pass, int atm_id){
     if (acnt->pass != pass){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
+        fflush(globals->log_file);
         log_unlock();
         account_read_unlock(acnt);
         return NULL;
@@ -115,8 +117,11 @@ account *account_check_id_write(int id){
         account *acnt = (account*)l->data;
         if(acnt->id == id){
             // lock account for function and release global list
-            account_write_lock(acnt);
+            fprintf(stderr, "reached here\n");
             rwlock_release_read((globals->account_lock));
+            fprintf(stderr, "reached here too\n");
+            account_write_lock(acnt);
+            fprintf(stderr, "account id is %d\n", acnt->id);
             return acnt;
         }
     }
@@ -126,10 +131,12 @@ account *account_check_id_write(int id){
 
 account *account_check_id_and_pass_write(int id, int pass, int atm_id){
     account *acnt = account_check_id_write(id);
+    fprintf(stderr, "account id is %d\n", acnt->id);
     // check id
-    if (acnt){
+    if (!acnt){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - account id %d does not exist\n", atm_id, id);
+        fflush(globals->log_file);
         log_unlock();
         return NULL;
     }
@@ -137,6 +144,7 @@ account *account_check_id_and_pass_write(int id, int pass, int atm_id){
     if (acnt->pass != pass){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
+        fflush(globals->log_file);
         log_unlock();
         account_write_unlock(acnt);
         return NULL;
@@ -151,6 +159,7 @@ f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
     if (check_acnt){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - account with the same id exists\n", atm_id);
+        fflush(globals->log_file); 
         log_unlock();
         return INVALID_ID;
     }
@@ -162,6 +171,7 @@ f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
     // write to log
     log_lock();
     fprintf(globals->log_file, "%d: New account id is %d with password %d and initial balance %d\n", atm_id, id, pass, initial_amount);
+    fflush(globals->log_file);
     log_unlock();
     return SUCCESS;
 }
@@ -169,15 +179,18 @@ f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
 
 f_status_t account_d(int id, int pass, int amount, int atm_id){
     account *acnt = account_check_id_and_pass_write(id, pass, atm_id);
+    fprintf(stderr, "acnt is %p\n", (void*)acnt);
     if (!acnt) return FAILURE;
     // add amount
     // TODO - check if amount > 0 ?
+    fprintf(stderr, "account_d called with id: %d, pass: %d, amount: %d, atm_id: %d\n", id, pass, amount, atm_id);
     acnt->balance += amount;
     int balance = acnt->balance;
     account_write_unlock(acnt);
     // write to log
     log_lock();
     fprintf(globals->log_file, "%d: Account %d new balance is %d after %d $ was deposited\n", atm_id, id, balance, amount);
+    fflush(globals->log_file);
     log_unlock();
     return SUCCESS;
 }
@@ -191,6 +204,7 @@ f_status_t account_w(int id, int pass, int amount, int atm_id){
     if (balance < amount){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - account id %d balance is lower than %d\n", atm_id, id, amount);
+        fflush(globals->log_file);
         log_unlock();
         account_write_unlock(acnt);
         return FAILURE;
@@ -201,6 +215,7 @@ f_status_t account_w(int id, int pass, int amount, int atm_id){
     // write to log
     log_lock();
     fprintf(globals->log_file, "%d: Account %d new balance is %d after %d $ was withdrawn\n", atm_id, id, balance, amount);
+    fflush(globals->log_file);
     log_unlock();
     return SUCCESS;
 }
@@ -215,6 +230,7 @@ f_status_t account_b(int id, int pass, int atm_id){
     // write to log
     log_lock();
     fprintf(globals->log_file, "%d: Account %d balance is %d\n", atm_id, id, balance);
+    fflush(globals->log_file);
     log_unlock();
     return SUCCESS;
 }
@@ -234,6 +250,7 @@ f_status_t account_q(int id, int pass, int atm_id){
     // write to log
     log_lock();
     fprintf(globals->log_file, "%d: Account %d is now closed. Balance was %d\n", atm_id, id, balance);
+    fflush(globals->log_file);
     log_unlock();
     return SUCCESS;
 }
@@ -247,6 +264,7 @@ f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id){
     if (balance < amount){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - account id %d balance is lower than %d\n", atm_id, id, amount);
+        fflush(globals->log_file);
         log_unlock();
         account_write_unlock(acnt);
         return FAILURE;
@@ -266,6 +284,7 @@ f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id){
     log_lock();
     fprintf(globals->log_file, "%d: Transfer %d from account %d to account %d new account balance is %d new target account balance is %d\n",
         atm_id, amount, id, to_id, balance, to_balance);
+    fflush(globals->log_file);
     log_unlock();
     return SUCCESS;
 }

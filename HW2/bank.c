@@ -69,7 +69,7 @@ void run_bank(){
         check_delete_reqs();
         counter++;
         lock_all_accounts();    // split to read write in comment if loack_all for read is needed (default is write for this instance)
-        printf("\033[2J]");
+        printf("\033[2J");
         printf("\033[1:1H");
         // go over all accounts
         Node *l;
@@ -94,6 +94,7 @@ void charge_commission(account *account){
     globals->bank_account->balance += commission;
     fprintf(globals->log_file ,"Bank: commissions of %d %% were charged, bank gained %d from account %d\n",
         precentage, commission, account->id);
+    fflush(globals->log_file);
 }
 
 void check_delete_reqs(){
@@ -118,6 +119,7 @@ void check_delete_reqs(){
             log_lock();
             fprintf(globals->log_file, "Error %d: Your close operation failed - ATM ID %d is already in a closed state\n",
                  curr_delete_req->source_id, curr_delete_req->target_id);
+            fflush(globals->log_file);
             log_unlock();
         }
         rwlock_acquire_write((globals->delete_lock));
@@ -135,6 +137,7 @@ void check_delete_reqs(){
             globals->atms[i] = NULL;
             log_lock();
             fprintf(globals->log_file, "Bank: ATM %d closed %d successfully\n", atm_delete_req->source_id ,atm_delete_req->target_id);
+            fflush(globals->log_file);
             log_unlock();
         }
     }
