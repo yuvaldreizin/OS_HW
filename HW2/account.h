@@ -10,7 +10,7 @@
 * Structures
 * =============================================================================*/
 
-account *account_init(int id, int pass, int balance);
+account_with_id *account_init(int id, int pass, int balance);
 void account_free(void *acc);
 // int account_get_id(account *account);
 // int account_get_pass(account *account);

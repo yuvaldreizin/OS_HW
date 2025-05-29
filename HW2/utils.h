@@ -8,12 +8,17 @@
 #include "lock.h"
 
 
-typedef struct account{
+typedef struct accoun{
     int id;
     int pass;
     int balance;
     rwlock_t lock;
 } account;
+
+typedef struct account_id{
+    account *acc;
+    int id;
+} account_with_id;
 
 struct delete_request
 {
@@ -31,7 +36,7 @@ struct atm
 typedef struct atm *atm_t;
 
 
-extern account* account_init(int id, int pass, int balance);
+extern account_with_id* account_init(int id, int pass, int balance);
 extern void account_free(void *acc);
 extern void destroy_atm(atm_t atm);
 
@@ -76,7 +81,7 @@ struct globals {
     LinkedList *delete_requests;
     atm_t *atms;
     int num_atms;
-    account *bank_account; // the bank account
+    account_with_id *bank_account; // the bank account
     rwlock_t account_lock;
     rwlock_t atm_lock;
     rwlock_t log_lock;
