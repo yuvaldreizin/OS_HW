@@ -118,9 +118,9 @@ account *account_check_id_write(int id){
         if(acnt->id == id){
             // lock account for function and release global list
             fprintf(stderr, "reached here\n");
-            rwlock_release_read((globals->account_lock));
-            fprintf(stderr, "reached here too\n");
             account_write_lock(acnt);
+            fprintf(stderr, "reached here too\n");
+            rwlock_release_read((globals->account_lock));
             fprintf(stderr, "account id is %d\n", acnt->id);
             return acnt;
         }
@@ -131,7 +131,6 @@ account *account_check_id_write(int id){
 
 account *account_check_id_and_pass_write(int id, int pass, int atm_id){
     account *acnt = account_check_id_write(id);
-    fprintf(stderr, "account id is %d\n", acnt->id);
     // check id
     if (!acnt){
         log_lock();
@@ -140,6 +139,7 @@ account *account_check_id_and_pass_write(int id, int pass, int atm_id){
         log_unlock();
         return NULL;
     }
+    fprintf(stderr, "account id is %d\n", acnt->id);
     // check pass
     if (acnt->pass != pass){
         log_lock();
@@ -179,8 +179,8 @@ f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
 
 f_status_t account_d(int id, int pass, int amount, int atm_id){
     account *acnt = account_check_id_and_pass_write(id, pass, atm_id);
-    fprintf(stderr, "acnt is %p\n", (void*)acnt);
     if (!acnt) return FAILURE;
+    fprintf(stderr, "acnt is %p\n", (void*)acnt);
     // add amount
     // TODO - check if amount > 0 ?
     fprintf(stderr, "account_d called with id: %d, pass: %d, amount: %d, atm_id: %d\n", id, pass, amount, atm_id);
