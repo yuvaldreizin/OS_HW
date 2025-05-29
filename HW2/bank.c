@@ -75,7 +75,7 @@ void run_bank(){
         Node *l;
         for (l = globals->accounts->head; l != NULL; l = l->next)
         {
-            account *acnt = (account *)l->data;
+            account *acnt = ((account_with_id *)(l->data))->acc;
             account_print(acnt);
             if (counter == 6){ // every 3 seconds
                 charge_commission(acnt);
@@ -91,7 +91,7 @@ void charge_commission(account *account){
     int precentage = rand() % 4 + 1;
     int commission = account->balance * precentage / 100;
     account->balance -= commission;
-    globals->bank_account->balance += commission;
+    globals->bank_account->acc->balance += commission;
     fprintf(globals->log_file ,"Bank: commissions of %d %% were charged, bank gained %d from account %d\n",
         precentage, commission, account->id);
     fflush(globals->log_file);
