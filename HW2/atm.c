@@ -41,7 +41,7 @@ command_t read_next_command(atm_t atm){
     {
         ERROR_EXIT("Error reading file");
     }
-    read = getline(&line, &len, atm->file);
+    read = getline(&line, &len, atm->file); // MEM LEAK HERE
     if (read == -1) {
         if (feof(atm->file)) {
             // End of file reached
@@ -116,7 +116,7 @@ void run_atm(atm_t atm)
         rwlock_release_read((atm->lock));
         nanosleep(&ts, NULL);
         cmd = read_next_command(atm);
-        fprintf(stderr, "ATM %d: Read command %c with args: ", atm->id, cmd->type);
+        fprintf(stderr, "ATM %d: Read command %c with args: ", atm->id, cmd->type); // MEM LEAK HERE
         for (int i = 0; i < ARGS_NUM_MAX && cmd->args[i] != 0; i++)
         {
             fprintf(stderr, "%d ", cmd->args[i]);

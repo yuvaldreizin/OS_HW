@@ -117,22 +117,16 @@ account *account_check_id_and_pass_read(int id, int pass, int atm_id){
 account* account_check_id_write(int id){ 
     rwlock_acquire_read((globals->account_lock));
     Node *l;
-    fprintf(stderr, "looking for account id %d\n", id);
     for (l = globals->accounts->head; l != NULL; l=l->next){
         account_with_id *acnt = (account_with_id*)l->data;
-        fprintf(stderr, "checking account id %d\n", acnt->id);
         if(acnt->id == id){
-            fprintf(stderr, "found account id %d\n", acnt->id);
             // lock account for function and release global list
             account_write_lock(acnt->acc);
-            fprintf(stderr, "reached here too\n");
             rwlock_release_read((globals->account_lock));
-            fprintf(stderr, "account id is %d\n", acnt->id);
             return acnt->acc;
         }
     }
     rwlock_release_read((globals->account_lock));
-    fprintf(stderr, "account id %d not found\n", id);
     return NULL;
 }
 
@@ -146,7 +140,6 @@ account *account_check_id_and_pass_write(int id, int pass, int atm_id){
         log_unlock();
         return NULL;
     }
-    fprintf(stderr, "account id is %d\n", acnt->id);
     // check pass
     if (acnt->pass != pass){
         log_lock();
@@ -164,6 +157,7 @@ f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
     // check if id exists
     account *check_acnt = account_check_id_read(id);
     if (check_acnt){
+        account_read_unlock(check_acnt);
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - account with the same id exists\n", atm_id);
         fflush(globals->log_file); 
@@ -187,10 +181,8 @@ f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
 f_status_t account_d(int id, int pass, int amount, int atm_id){
     account *acnt = account_check_id_and_pass_write(id, pass, atm_id);
     if (!acnt) return FAILURE;
-    fprintf(stderr, "acnt is %p\n", (void*)acnt);
     // add amount
     // TODO - check if amount > 0 ?
-    fprintf(stderr, "account_d called with id: %d, pass: %d, amount: %d, atm_id: %d\n", id, pass, amount, atm_id);
     acnt->balance += amount;
     int balance = acnt->balance;
     account_write_unlock(acnt);
@@ -291,9 +283,7 @@ f_status_t account_q(int id, int pass, int atm_id){
 
 
 f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id){
-    fprintf(stderr, "debug\n");
     account *acnt = account_check_id_and_pass_write(id, pass, atm_id);
-    fprintf(stderr, "acnt is %p\n", (void*)acnt);
     if (!acnt) return FAILURE;
     // check balance
     int balance = acnt->balance;
@@ -305,9 +295,7 @@ f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id){
         account_write_unlock(acnt);
         return FAILURE;
     }
-    fprintf(stderr, "trying to find second_account\n");
     account *to_acnt = account_check_id_write(to_id);
-    fprintf(stderr, "found second_account\n");
     if (!to_acnt){
         account_write_unlock(acnt);
         return FAILURE;

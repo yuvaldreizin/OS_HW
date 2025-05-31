@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
         }
     }
     globals->bank_thread = MALLOC_VALIDATED(pthread_t ,sizeof(pthread_t));
-    if (pthread_create(globals->bank_thread, NULL, run_bank_aux, NULL) != 0)
+    if (pthread_create(globals->bank_thread, NULL, run_bank_aux, NULL) != 0) // MEM LEAK HERE - during alloc
     {
         ERROR_EXIT("Error creating bank thread");
     }
@@ -68,7 +68,7 @@ void run_bank(){
         nanosleep(&ts, NULL);
         check_delete_reqs();
         counter++;
-        lock_all_accounts();    // split to read write in comment if loack_all for read is needed (default is write for this instance)
+        lock_all_accounts();    // write lock on all
         printf("\033[2J");
         printf("\033[1:1H");
         // go over all accounts
@@ -99,7 +99,7 @@ void charge_commission(account *account){
 
 void check_delete_reqs(){
     // check if any ATM is marked for deletion
-    rwlock_acquire_write((globals->delete_lock));
+    // rwlock_acquire_write((globals->delete_lock)); //not needed. worst case is another node during for loop.
     Node *l;
     for (l = globals->delete_requests->head; l != NULL; l = l->next)
     {
