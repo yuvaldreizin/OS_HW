@@ -51,7 +51,6 @@ command_t read_next_command(atm_t atm){
             ERROR_EXIT("Read error");
         }
     }
-    // ------ RUNTIME BUG - CAN'T GET HERE ------
     // Parse the line into command
     command_t new_command = MALLOC_VALIDATED(struct command, sizeof(struct command));
     new_command->password = NULL; // Initialize password to NULL
@@ -111,7 +110,7 @@ void execute_command(atm_t atm, command_t cmd)
 
 void run_atm(atm_t atm)
 {
-    command_t cmd;
+    command_t cmd;  // mem allocated in read_next_command
     struct timespec ts;
     ts.tv_sec = 0;
     ts.tv_nsec = 100000000;  // (0.1 seconds) 
@@ -125,22 +124,25 @@ void run_atm(atm_t atm)
         rwlock_release_read((atm->lock));
         nanosleep(&ts, NULL);
         cmd = read_next_command(atm);
+        if (!cmd){
+            break;
+        }
         fprintf(stderr, "ATM %d: Read command %c with args: ", atm->id, cmd->type); // MEM LEAK HERE
         for (int i = 0; i < ARGS_NUM_MAX && cmd->args[i] != 0; i++)
         {
             fprintf(stderr, "%d ", cmd->args[i]);
         }
         fprintf(stderr, "\n");
-        if (!cmd){
-            break;
-        }
         execute_command(atm, cmd);
         sleep(1);
     }
     // TODO - lock ATMs struct and specific ATM
     fprintf(stderr, "ATM %d: finished\n", atm->id);
+    rwlock_acquire_write(atm->lock);
     globals->atms[atm->id] = NULL;
     finished++;
+    rwlock_release_write(atm->lock);
+    destroy_atm(atm);
 }
 
 void delete_atm(int target_id, int source_id)

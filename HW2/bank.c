@@ -64,7 +64,13 @@ void run_bank(){
     struct timespec ts;
     ts.tv_sec = 0;
     ts.tv_nsec = 500000000;  // (0.5 seconds)
-    while(finished < globals->num_atms){
+    while(1){
+        rwlock_acquire_read(globals->atm_lock);
+        if (finished == globals->num_atms){
+            rwlock_release_read(globals->atm_lock);
+            break;
+        }
+        rwlock_release_read(globals->atm_lock);
         nanosleep(&ts, NULL);
         check_delete_reqs();
         counter++;
@@ -125,7 +131,7 @@ void check_delete_reqs(){
         rwlock_acquire_write((globals->delete_lock));
         linked_list_remove(globals->delete_requests, curr_delete_req);
         rwlock_release_write((globals->delete_lock));
-        free(curr_delete_req);
+        // free(curr_delete_req); // freed with atm
     }
     for (int i = 1; i <= globals->num_atms; i++){
         atm_t atm = globals->atms[i];
