@@ -15,8 +15,8 @@ account_with_id *account_init(int id, int pass, int balance){
 
 
 void account_free(void* acc){
+    if (acc == NULL) return;
     account_with_id * acnt_with_id = (account_with_id *)acc;
-    if (acnt_with_id == NULL) return;
     rwlock_destroy((acnt_with_id->acc->lock));
     free(acnt_with_id->acc);
     free(acnt_with_id);

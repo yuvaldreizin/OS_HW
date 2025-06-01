@@ -23,14 +23,13 @@ void global_init(){
 
 void global_free(){
     if (globals == NULL) return;
-    // TODO - Free all accounts
-    rwlock_acquire_write((globals->account_lock));
+    // no locks since all threads ended
     linked_list_free(globals->accounts, account_free);
-    rwlock_release_write((globals->account_lock));
     linked_list_free(globals->delete_requests, free);
-    // TODO - Free all ATMs
     for (int i = 0; i < globals->num_atms; i++) {
-        destroy_atm(globals->atms[i]);
+        if(globals->atms[i]){
+            destroy_atm(globals->atms[i]);
+        }
     }
     rwlock_destroy((globals->log_lock));
     rwlock_destroy((globals->atm_lock));

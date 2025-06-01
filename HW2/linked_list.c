@@ -84,7 +84,7 @@ void linked_list_free(LinkedList *list, void (*free_func)(void *)) {
     Node *current = list->head;
     while (current) {
         Node *next = current->next;
-        if (free_func) {
+        if (free_func && current->data) {
             free_func(current->data);
         }
         free(current);
