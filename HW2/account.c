@@ -1,13 +1,14 @@
 #define _POSIX_C_SOURCE 200809L
 #include "account.h"
+#include "string.h"
 
-account_with_id *account_init(int id, int pass, int balance){
+account_with_id *account_init(int id, char *pass, int balance){
     account_with_id *acnt_with_id = MALLOC_VALIDATED(account_with_id, sizeof(account_with_id));
     acnt_with_id->id = id;
     acnt_with_id->acc = MALLOC_VALIDATED(account, sizeof(account));
     account *acnt = acnt_with_id->acc; 
     acnt->id = id;
-    acnt->pass = pass;
+    acnt->pass = strdup(pass);
     acnt->balance = balance;
     acnt->lock = rwlock_init();
     return acnt_with_id;
@@ -18,6 +19,9 @@ void account_free(void* acc){
     if (acc == NULL) return;
     account_with_id * acnt_with_id = (account_with_id *)acc;
     rwlock_destroy((acnt_with_id->acc->lock));
+    if (acnt_with_id->acc->pass) {
+        free(acnt_with_id->acc->pass);
+    }
     free(acnt_with_id->acc);
     free(acnt_with_id);
 }
@@ -91,7 +95,7 @@ account *account_check_id_read(int id){
     return NULL;
 }
 
-account *account_check_id_and_pass_read(int id, int pass, int atm_id){
+account *account_check_id_and_pass_read(int id, char* pass, int atm_id){
     account *acnt = account_check_id_read(id);
     // check id
     if (!acnt){
@@ -101,8 +105,7 @@ account *account_check_id_and_pass_read(int id, int pass, int atm_id){
         log_unlock();
         return NULL;
     }
-    // check pass
-    if (acnt->pass != pass){
+    if (strcmp(acnt->pass, pass) != 0){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
         fflush(globals->log_file);
@@ -130,7 +133,7 @@ account* account_check_id_write(int id){
     return NULL;
 }
 
-account *account_check_id_and_pass_write(int id, int pass, int atm_id){
+account *account_check_id_and_pass_write(int id, char *pass, int atm_id){
     account *acnt = account_check_id_write(id);
     // check id
     if (!acnt){
@@ -141,7 +144,7 @@ account *account_check_id_and_pass_write(int id, int pass, int atm_id){
         return NULL;
     }
     // check pass
-    if (acnt->pass != pass){
+    if (strcmp(acnt->pass, pass) != 0){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
         fflush(globals->log_file);
@@ -153,7 +156,7 @@ account *account_check_id_and_pass_write(int id, int pass, int atm_id){
 }
 
 
-f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
+f_status_t account_o(int id, char *pass, int initial_amount, int atm_id){
     // check if id exists
     account *check_acnt = account_check_id_read(id);
     if (check_acnt){
@@ -171,14 +174,14 @@ f_status_t account_o(int id, int pass, int initial_amount, int atm_id){
     rwlock_release_write((globals->account_lock));
     // write to log
     log_lock();
-    fprintf(globals->log_file, "%d: New account id is %d with password %d and initial balance %d\n", atm_id, id, pass, initial_amount);
+    fprintf(globals->log_file, "%d: New account id is %d with password %s and initial balance %d\n", atm_id, id, pass, initial_amount);
     fflush(globals->log_file);
     log_unlock();
     return SUCCESS;
 }
 
 
-f_status_t account_d(int id, int pass, int amount, int atm_id){
+f_status_t account_d(int id, char *pass, int amount, int atm_id){
     account *acnt = account_check_id_and_pass_write(id, pass, atm_id);
     if (!acnt) return FAILURE;
     // add amount
@@ -195,7 +198,7 @@ f_status_t account_d(int id, int pass, int amount, int atm_id){
 }
 
 
-f_status_t account_w(int id, int pass, int amount, int atm_id){
+f_status_t account_w(int id, char *pass, int amount, int atm_id){
     account *acnt = account_check_id_and_pass_write(id, pass, atm_id);
     if (!acnt) return FAILURE;
     // check balance
@@ -220,7 +223,7 @@ f_status_t account_w(int id, int pass, int amount, int atm_id){
 }
 
 
-f_status_t account_b(int id, int pass, int atm_id){
+f_status_t account_b(int id, char *pass, int atm_id){
     account *acnt = account_check_id_and_pass_read(id, pass, atm_id);
     if (!acnt) return FAILURE;
     // check balance
@@ -235,7 +238,7 @@ f_status_t account_b(int id, int pass, int atm_id){
 }
 
 
-f_status_t account_q(int id, int pass, int atm_id){
+f_status_t account_q(int id, char *pass, int atm_id){
     // check if account exists
     rwlock_acquire_write((globals->account_lock));
     account_with_id *acnt;
@@ -258,7 +261,7 @@ f_status_t account_q(int id, int pass, int atm_id){
         return FAILURE;
     }
     // check for password
-    if (acnt->acc->pass != pass){
+    if (strcmp(acnt->acc->pass, pass) != 0){
         rwlock_release_write((globals->account_lock));
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
@@ -282,7 +285,7 @@ f_status_t account_q(int id, int pass, int atm_id){
 }
 
 
-f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id){
+f_status_t account_t(int id, char *pass, int to_id, int amount, int atm_id){
     account *from_acnt = NULL;
     account *to_acnt = NULL;
     rwlock_acquire_read((globals->account_lock));
@@ -320,7 +323,7 @@ f_status_t account_t(int id, int pass, int amount, int to_id, int atm_id){
         return FAILURE;
     }
     // check pass
-    if (from_acnt->pass != pass){
+    if (strcmp(from_acnt->pass, pass) != 0){
         log_lock();
         fprintf(globals->log_file, "Error %d: Your transaction failed - password for account id %d is incorrect\n", atm_id, id);
         fflush(globals->log_file);
@@ -361,9 +364,9 @@ f_status_t account_print(account *acnt){
     // ASSUME ACCOUNT IS LOCKED
     // print account
     int id = acnt->id;
-    int pass = acnt->pass;
+    char *pass = acnt->pass;
     int balance = acnt->balance;
-    printf("Account %d: Balance - %d $, Account Password - %d\n", id, balance, pass);
+    printf("Account %d: Balance - %d $, Account Password - %s\n", id, balance, pass);
     return SUCCESS;
 }
 

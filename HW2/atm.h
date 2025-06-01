@@ -15,6 +15,7 @@ struct command
 {
     char type;
     int args[ARGS_NUM_MAX];
+    char *password;
 };
 
 typedef enum

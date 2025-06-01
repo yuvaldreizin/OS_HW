@@ -10,7 +10,7 @@
 
 typedef struct accoun{
     int id;
-    int pass;
+    char *pass;
     int balance;
     rwlock_t lock;
 } account;
@@ -36,7 +36,7 @@ struct atm
 typedef struct atm *atm_t;
 
 
-extern account_with_id* account_init(int id, int pass, int balance);
+extern account_with_id* account_init(int id, char *pass, int balance);
 extern void account_free(void *acc);
 extern void destroy_atm(atm_t atm);
 

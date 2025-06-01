@@ -9,7 +9,7 @@ void global_init(){
     globals->atm_lock = rwlock_init();
     globals->delete_lock = rwlock_init();
     globals->num_atms = 0;
-    globals->bank_account = account_init(0, 0, 0); // bank account
+    globals->bank_account = account_init(0, "0000", 0); // bank account
     globals->log_lock = rwlock_init();
     // remove existing log file if it exists
     if (access(LOG_FILE_NAME, F_OK) != -1) {

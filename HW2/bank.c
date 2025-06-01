@@ -92,14 +92,14 @@ void run_bank(){
     }
 }
 
-void charge_commission(account *account){
+void charge_commission(account *charged_account){
     // generate a random number
     int precentage = rand() % 4 + 1;
-    int commission = account->balance * precentage / 100;
-    account->balance -= commission;
+    int commission = charged_account->balance * precentage / 100;
+    charged_account->balance -= commission;
     globals->bank_account->acc->balance += commission;
     fprintf(globals->log_file ,"Bank: commissions of %d %% were charged, bank gained %d from account %d\n",
-        precentage, commission, account->id);
+        precentage, commission, charged_account->id);
     fflush(globals->log_file);
 }
 

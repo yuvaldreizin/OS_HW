@@ -53,6 +53,7 @@ command_t read_next_command(atm_t atm){
     }
     // Parse the line into command
     command_t new_command = MALLOC_VALIDATED(struct command, sizeof(struct command));
+    new_command->password = NULL; // Initialize password to NULL
 	char* delimiters = " \n";
     new_command->type = *(strtok(line, delimiters));
 	for(int i = 0; i < ARGS_NUM_MAX; i++)
@@ -60,7 +61,12 @@ command_t read_next_command(atm_t atm){
         char* arg = strtok(NULL, delimiters);
         if(!arg)
             break;
-        new_command->args[i] = atoi(arg); // convert string to int
+        if (i==1){
+            new_command->password = strdup(arg); // store password
+        }
+        else{
+            new_command->args[i] = atoi(arg); // convert string to int
+        }
 	}
     // Free the line buffer
     free(line);
@@ -72,22 +78,22 @@ void execute_command(atm_t atm, command_t cmd)
     switch (cmd->type)
     {
         case 'O':
-            account_o(cmd->args[0], cmd->args[1], cmd->args[2], atm->id);
+            account_o(cmd->args[0], cmd->password, cmd->args[2], atm->id);
             break;
         case 'D':
-            account_d(cmd->args[0], cmd->args[1], cmd->args[2], atm->id);
+            account_d(cmd->args[0], cmd->password, cmd->args[2], atm->id);
             break;
         case 'W':
-            account_w(cmd->args[0], cmd->args[1], cmd->args[2], atm->id);
+            account_w(cmd->args[0], cmd->password, cmd->args[2], atm->id);
             break;
         case 'B':
-            account_b(cmd->args[0], cmd->args[1], atm->id);
+            account_b(cmd->args[0], cmd->password, atm->id);
             break;
         case 'Q':
-            account_q(cmd->args[0], cmd->args[1], atm->id);
+            account_q(cmd->args[0], cmd->password, atm->id);
             break;
         case 'T':
-            account_t(cmd->args[0], cmd->args[1], cmd->args[2], cmd->args[3], atm->id);
+            account_t(cmd->args[0], cmd->password, cmd->args[2], cmd->args[3], atm->id);
             break;
         case 'C':
             delete_atm(cmd->args[0], atm->id);
@@ -96,6 +102,9 @@ void execute_command(atm_t atm, command_t cmd)
             ERROR_EXIT("Invalid command");
     }
     // Free the command
+    if (cmd->password != NULL) {
+        free(cmd->password); // Free the password if it was allocated
+    }
     free(cmd);
 }
 
