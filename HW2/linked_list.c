@@ -19,8 +19,16 @@ void linked_list_add(LinkedList *list, void *data) {
         exit(1);
     }
     new_node->data = data;
-    new_node->next = list->head;
-    list->head = new_node;
+    new_node->next = NULL;
+    if (list->head == NULL) {
+        list->head = new_node;
+    } else {
+        Node *current = list->head;
+        while (current->next) {
+            current = current->next;
+        }
+        current->next = new_node;
+    }
 }
 
 // Remove an element from the list

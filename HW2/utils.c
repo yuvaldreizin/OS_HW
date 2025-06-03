@@ -8,6 +8,7 @@ void global_init(){
     globals->account_lock = rwlock_init();
     globals->atm_lock = rwlock_init();
     globals->delete_lock = rwlock_init();
+    globals->finished_lock = rwlock_init();
     globals->num_atms = 0;
     globals->bank_account = account_init(0, "0000", 0); // bank account
     globals->log_lock = rwlock_init();
@@ -19,6 +20,7 @@ void global_init(){
     globals->atm_threads = NULL;
     globals->bank_thread = NULL;
     globals->delete_requests = linked_list_init();
+    globals->finished = 0;
 }
 
 void global_free(){
@@ -27,10 +29,15 @@ void global_free(){
     linked_list_free(globals->accounts, account_free);
     linked_list_free(globals->delete_requests, free);
     for (int i = 0; i < globals->num_atms; i++) {
-        if(globals->atms[i]){
+        if (globals->atms[i] != NULL){
             destroy_atm(globals->atms[i]);
         }
+        if (globals->atm_threads[i] != NULL) {
+            free(globals->atm_threads[i]);
+            globals->atm_threads[i] = NULL;
+        }
     }
+    free(globals->atms);
     rwlock_destroy((globals->log_lock));
     rwlock_destroy((globals->atm_lock));
     rwlock_destroy((globals->account_lock));

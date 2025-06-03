@@ -86,9 +86,11 @@ struct globals {
     rwlock_t atm_lock;
     rwlock_t log_lock;
     rwlock_t delete_lock;
+    rwlock_t finished_lock;
     FILE *log_file;
     pthread_t **atm_threads;
     pthread_t *bank_thread;
+    int finished;
 };
 
 #define LOG_FILE_NAME "log.txt"
