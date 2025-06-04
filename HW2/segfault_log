@@ -1,0 +1,13 @@
+1: New account id is 1 with password 123 and initial balance 300
+Error 2: Your transaction failed - account with the same id exists
+3: New account id is 3 with password 333 and initial balance 100
+4: New account id is 4 with password 444 and initial balance 0
+2: Account 1 new balance is 200 after 100 $ was withdrawn
+ATM 1: Read command O
+ATM 2: Read command O
+ATM 3: Read command O
+ATM 4: Read command O
+ATM 1: Read command C
+ATM 2: Read command W
+ATM 4: Read command B
+ATM 3: Read command D
