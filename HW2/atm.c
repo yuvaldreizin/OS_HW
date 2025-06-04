@@ -25,7 +25,11 @@ void destroy_atm(atm_t atm)
             free(atm->delete_req);
             atm->delete_req = NULL;
         }
-        fclose(atm->file);
+        if (atm->file != NULL)
+        {
+            fclose(atm->file);
+            atm->file = NULL;
+        }
         rwlock_destroy(atm->lock);
         free(atm);
         atm = NULL;
@@ -44,6 +48,9 @@ command_t read_next_command(atm_t atm){
     read = getline(&line, &len, atm->file); // MEM LEAK HERE
     if (read == -1) {
         if (feof(atm->file)) {
+            if (line != NULL) {
+                free(line); // Free the line buffer if it was allocated
+            }
             // End of file reached
             return NULL;
         } else if (ferror(atm->file)) {
@@ -127,22 +134,16 @@ void run_atm(atm_t atm)
         if (!cmd){
             break;
         }
-        fprintf(stderr, "ATM %d: Read command %c with args: ", atm->id, cmd->type); // MEM LEAK HERE
-        for (int i = 0; i < ARGS_NUM_MAX && cmd->args[i] != 0; i++)
-        {
-            fprintf(stderr, "%d ", cmd->args[i]);
-        }
-        fprintf(stderr, "\n");
+        fprintf(stderr, "ATM %d: Read command %c\n", atm->id, cmd->type); // MEM LEAK HERE
+
         execute_command(atm, cmd);
         sleep(1);
     }
-    // TODO - lock ATMs struct and specific ATM
     fprintf(stderr, "ATM %d: finished\n", atm->id);
-    rwlock_acquire_write(atm->lock);
-    globals->atms[atm->id] = NULL;
-    finished++;
-    rwlock_release_write(atm->lock);
-    destroy_atm(atm);
+    rwlock_acquire_write((globals->finished_lock));
+    globals->finished++;
+    rwlock_release_write((globals->finished_lock));
+    return;
 }
 
 void delete_atm(int target_id, int source_id)
@@ -160,7 +161,7 @@ void delete_atm(int target_id, int source_id)
     delete_req->source_id = source_id;
     delete_req->target_id = target_id;
     rwlock_acquire_write((globals->delete_lock));
-    linked_list_add(globals->delete_requests, delete_req);
+    linked_list_add(globals->delete_requests, (void *)delete_req);
     rwlock_release_write((globals->delete_lock));
 }
 
