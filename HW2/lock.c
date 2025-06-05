@@ -39,7 +39,7 @@ void rwlock_release_read(rwlock_t rw) {
 void rwlock_acquire_write(rwlock_t rw) {
     pthread_mutex_lock(rw->lock);
     rw->writers++;
-    while (rw->readers > 0 || rw->writers > 1) {
+    if (rw->readers > 0 || rw->writers > 1) {
         pthread_cond_wait(rw->writers_ok, rw->lock);
     }
     pthread_mutex_unlock(rw->lock);
