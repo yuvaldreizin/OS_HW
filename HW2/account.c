@@ -158,17 +158,20 @@ account *account_check_id_and_pass_write(int id, char *pass, int atm_id){
 
 f_status_t account_o(int id, char *pass, int initial_amount, int atm_id){
     // check if id exists
-    account *check_acnt = account_check_id_read(id);
-    if (check_acnt){
-        account_read_unlock(check_acnt);
-        log_lock();
-        fprintf(globals->log_file, "Error %d: Your transaction failed - account with the same id exists\n", atm_id);
-        fflush(globals->log_file); 
-        log_unlock();
-        return INVALID_ID;
+    rwlock_acquire_write((globals->account_lock));
+    Node *l;
+    for (l = globals->accounts->head; l != NULL; l=l->next){
+        account_with_id *acnt = (account_with_id*)l->data;
+        if(acnt->id == id){
+            log_lock();
+            fprintf(globals->log_file, "Error %d: Your transaction failed - account with the same id exists\n", atm_id);
+            fflush(globals->log_file);
+            log_unlock();
+            rwlock_release_write((globals->account_lock));
+            return INVALID_ID;
+        }
     }
     // add account
-    rwlock_acquire_write((globals->account_lock));
     account_with_id *acnt = account_init(id, pass, initial_amount);
     linked_list_sorted_insert(globals->accounts, acnt, accounts_compare);
     rwlock_release_write((globals->account_lock));
