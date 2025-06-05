@@ -157,6 +157,16 @@ void delete_atm(int target_id, int source_id)
         log_unlock();
         return;
     }
+    if (globals->atms[target_id] == NULL)
+    {
+        // ATM is already closed
+            log_lock();
+            fprintf(globals->log_file, "Error %d: Your close operation failed - ATM ID %d is already in a closed state\n",
+                 source_id, target_id);
+            fflush(globals->log_file);
+            log_unlock();
+            return;
+    }
     delete_request_t *delete_req = MALLOC_VALIDATED(struct delete_request, sizeof(struct delete_request));
     delete_req->source_id = source_id;
     delete_req->target_id = target_id;
