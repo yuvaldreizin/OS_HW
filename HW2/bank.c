@@ -78,7 +78,7 @@ void run_bank(){
         counter++;
         lock_all_accounts();    // write lock on all
         printf("\033[2J");
-        printf("\033[1:1H");
+        printf("\033[1;1H");
         // go over all accounts
         Node *l;
         for (l = globals->accounts->head; l != NULL; l = l->next)
