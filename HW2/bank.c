@@ -107,7 +107,7 @@ void charge_commission(account *charged_account){
 
 void check_delete_reqs(){
     // check if any ATM is marked for deletion
-    // rwlock_acquire_write((globals->delete_lock)); //not needed. worst case is another node during for loop.
+    rwlock_acquire_write((globals->delete_lock)); //not needed. worst case is another node during for loop.
     Node *l;
     for (l = globals->delete_requests->head; l != NULL;)
     {
@@ -130,12 +130,12 @@ void check_delete_reqs(){
             fflush(globals->log_file);
             log_unlock();
         }
-        rwlock_acquire_write((globals->delete_lock));
+        // rwlock_acquire_write((globals->delete_lock));
         l = l->next;
         linked_list_remove(globals->delete_requests, curr_delete_req);
-        rwlock_release_write((globals->delete_lock));
         // free(curr_delete_req); // freed with atm
     }
+    rwlock_release_write((globals->delete_lock));
     for (int i = 1; i <= globals->num_atms; i++){
         atm_t curr_atm = globals->atms[i];
         if (curr_atm != NULL && curr_atm->delete_req != NULL){

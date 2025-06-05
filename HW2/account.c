@@ -172,8 +172,8 @@ f_status_t account_o(int id, char *pass, int initial_amount, int atm_id){
         }
     }
     // add account
-    account_with_id *acnt = account_init(id, pass, initial_amount);
-    linked_list_sorted_insert(globals->accounts, acnt, accounts_compare);
+    account_with_id *new_acnt = account_init(id, pass, initial_amount);
+    linked_list_sorted_insert(globals->accounts, new_acnt, accounts_compare);
     rwlock_release_write((globals->account_lock));
     // write to log
     log_lock();
