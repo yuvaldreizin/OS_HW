@@ -158,9 +158,7 @@ account *account_check_id_and_pass_write(int id, char *pass, int atm_id){
 
 f_status_t account_o(int id, char *pass, int initial_amount, int atm_id){
     // check if id exists
-    fprintf(stderr, "trying to acquire write lock for account list in account_o:161\n");
     rwlock_acquire_write((globals->account_lock));
-    fprintf(stderr, "acquired write lock for account list in account_o:163\n");
     Node *l;
     for (l = globals->accounts->head; l != NULL; l=l->next){
         account_with_id *acnt = (account_with_id*)l->data;
@@ -187,15 +185,10 @@ f_status_t account_o(int id, char *pass, int initial_amount, int atm_id){
 
 
 f_status_t account_d(int id, char *pass, int amount, int atm_id){
-    fprintf(stderr, "trying to acquire write lock for account list in account_d\n");
     account *acnt = account_check_id_and_pass_write(id, pass, atm_id);
     if (!acnt){
-        fprintf(stderr, "failed to acquire write lock for account %d in account_d\n", id);
       return FAILURE;  
     } 
-    fprintf(stderr, "acquired write lock for account %d in account_d\n", id);
-    // add amount
-    // TODO - check if amount > 0 ?
     acnt->balance += amount;
     int balance = acnt->balance;
     account_write_unlock(acnt);
@@ -209,10 +202,8 @@ f_status_t account_d(int id, char *pass, int amount, int atm_id){
 
 
 f_status_t account_w(int id, char *pass, int amount, int atm_id){
-    fprintf(stderr, "trying to acquire write lock for account list in account_w\n");
     account *acnt = account_check_id_and_pass_write(id, pass, atm_id);
     if (!acnt) return FAILURE;
-    fprintf(stderr, "acquired write lock for account %d in account_w\n", id);
     // check balance
     int balance = acnt->balance;
     if (balance < amount){
@@ -236,13 +227,10 @@ f_status_t account_w(int id, char *pass, int amount, int atm_id){
 
 
 f_status_t account_b(int id, char *pass, int atm_id){
-    fprintf(stderr, "trying to acquire read lock for account list in account_b\n");
     account *acnt = account_check_id_and_pass_read(id, pass, atm_id);
     if (!acnt){
-        fprintf(stderr, "failed to acquire write lock for account %d in account_d\n", id);
       return FAILURE;  
     } 
-    fprintf(stderr, "acquired read lock for account %d in account_b\n", id);
     // check balance
     int balance = acnt->balance;
     account_read_unlock(acnt);
@@ -257,18 +245,14 @@ f_status_t account_b(int id, char *pass, int atm_id){
 
 f_status_t account_q(int id, char *pass, int atm_id){
     // check if account exists
-    fprintf(stderr, "trying to acquire write lock for account list in account_q\n");
     rwlock_acquire_write((globals->account_lock));
-    fprintf(stderr, "acquired write lock for account list in account_q\n");
     account_with_id *acnt;
     Node *l;
     int found = 0;
     for (l = globals->accounts->head; l != NULL; l=l->next){
         acnt = (account_with_id*)l->data;
         if(acnt->id == id){
-            fprintf(stderr, "trying to acquire write lock for account %d in account_q\n", id);
             account_write_lock(acnt->acc);
-            fprintf(stderr, "acquired write lock for account %d in account_q\n", id);
             found = 1;
             break;
         }
@@ -309,24 +293,18 @@ f_status_t account_q(int id, char *pass, int atm_id){
 f_status_t account_t(int id, char *pass, int to_id, int amount, int atm_id){
     account *from_acnt = NULL;
     account *to_acnt = NULL;
-    fprintf(stderr, "trying to acquire read lock for account list in account_t\n");
     rwlock_acquire_read((globals->account_lock));
-    fprintf(stderr, "acquired read lock for account list in account_t\n");
     Node *l;
     for (l = globals->accounts->head; l != NULL; l=l->next){
         account_with_id *acnt = (account_with_id*)l->data;
         if(acnt->id == id){
             // lock account for function and release global list
-            fprintf(stderr, "trying to acquire write lock for account %d in account_t\n", id);
             account_write_lock(acnt->acc);
-            fprintf(stderr, "acquired write lock for account %d in account_t\n", id);
             from_acnt = acnt->acc;
         }
         if(acnt->id == to_id){
             // lock account for function and release global list
-            fprintf(stderr, "trying to acquire write lock for account %d in account_t\n", to_id);
             account_write_lock(acnt->acc);
-            fprintf(stderr, "acquired write lock for account %d in account_t\n", to_id);
             to_acnt = acnt->acc;
         }
     }
@@ -398,15 +376,11 @@ f_status_t account_print(account *acnt){
 }
 
 void lock_all_accounts(){
-    fprintf(stderr, "trying to acquire write lock for account list in lock_all_accounts\n");
     rwlock_acquire_write((globals->account_lock));
-    fprintf(stderr, "acquired write lock for account list in lock_all_accounts\n");
     Node *l;
     for (l = globals->accounts->head; l != NULL; l=l->next){
         account *acnt = ((account_with_id*)l->data)->acc;
-        fprintf(stderr, "trying to acquire write lock for account %d in lock_all_accounts\n", acnt->id);
         account_write_lock(acnt);
-        fprintf(stderr, "acquired write lock for account %d in lock_all_accounts\n", acnt->id);
     }
 }
 

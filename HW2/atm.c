@@ -134,12 +134,10 @@ void run_atm(atm_t atm)
         if (!cmd){
             break;
         }
-        fprintf(stderr, "ATM %d: Read command %c\n", atm->id, cmd->type); // MEM LEAK HERE
 
         execute_command(atm, cmd);
         sleep(1);
     }
-    fprintf(stderr, "ATM %d: finished\n", atm->id);
     rwlock_acquire_write((globals->finished_lock));
     globals->finished++;
     rwlock_release_write((globals->finished_lock));

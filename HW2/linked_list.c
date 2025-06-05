@@ -11,7 +11,7 @@ LinkedList* linked_list_init() {
     return list;
 }
 
-// Add an element to the front of the list
+// Add an element to the end of the list
 void linked_list_add(LinkedList *list, void *data) {
     Node *new_node = (Node *)malloc(sizeof(Node));
     if (!new_node) {
@@ -35,7 +35,6 @@ void linked_list_add(LinkedList *list, void *data) {
 void linked_list_remove(LinkedList *list, void *data) {
     Node *current = list->head;
     Node *prev = NULL;
-
     while (current) {
         if (current->data == data) {
             if (prev) {
