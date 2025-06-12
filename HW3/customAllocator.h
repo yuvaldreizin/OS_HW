@@ -48,10 +48,23 @@ void heapKill()
 * Block
 =============================================================================*/
 // Suggestion for block usage - feel free to change this
-typedef struct Block {
+struct Block {
     size_t size;
     bool free;
-    Block* next;
-} Block;
+    block_t next;
+    block_t prev;
+    block_t nextFree;
+    void* data; 
+};
+typedef struct Block* block_t;
+
+struct Heap {
+    block_t firstBlock;
+    // size_t totalSize;
+};
+typedef struct Heap* heap_t;
+
+void add_block(heap_t heap, block_t block);
+void remove_block(heap_t heap, block_t block);
 
 #endif // CUSTOM_ALLOCATOR
