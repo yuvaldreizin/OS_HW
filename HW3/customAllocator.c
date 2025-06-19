@@ -37,5 +37,16 @@ void* customMalloc(size_t size){
 }
 
 void customFree(void* ptr);
-void* customCalloc(size_t nmemb, size_t size);
-void* customRealloc(void* ptr, size_t size);
+
+void* customCalloc(size_t nmemb, size_t size){
+    // memory for an array, so continuouse
+    void* alloc_mem = customMalloc(nmemb * size); // already aligned to 4
+    for (size_t i = 0; i < nmemb * size; i++) {
+        ((char*)alloc_mem)[i] = 0;
+    }
+    return alloc_mem;
+}
+
+void* customRealloc(void* ptr, size_t size){
+
+}
