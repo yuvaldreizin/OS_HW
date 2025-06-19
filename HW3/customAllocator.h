@@ -4,6 +4,7 @@
 #include <unistd.h> 
 #include <stdio.h>
 #include <stdbool.h>
+#include <errno.h>
 
 /*=============================================================================
 * Do no edit lines below!
@@ -19,19 +20,8 @@ void* customRealloc(void* ptr, size_t size);
 * Do no edit lines above!
 =============================================================================*/
 // Heap creation and destruction functions - 
-void heapCreate()
-{
-    g_heap = (heap_t)sbrk(sizeof(struct Heap));
-    g_heap->firstBlock = NULL;
-    g_heap->lastBlock = NULL;
-    return;
-}
-void heapKill()
-{
-    brk(g_heap);
-    g_heap = NULL;
-    return;
-}
+void heapCreate();
+void heapKill();
 
 /*=============================================================================
 * If writing bonus - uncomment lines below
@@ -62,9 +52,9 @@ struct Block {
     block_t next;
     block_t prev;
     // block_t nextFree;
-    bool free;
-    size_t size;
     void* data; 
+    size_t size;
+    bool free;
 };
 typedef struct Block* block_t;
 
@@ -77,7 +67,7 @@ typedef struct Heap* heap_t;
 
 heap_t g_heap;
 
-void add_block(heap_t heap, block_t block);
-void remove_block(heap_t heap, block_t block);
+block_t checkPtr(void* ptr);
+void out_of_memory();
 
 #endif // CUSTOM_ALLOCATOR
