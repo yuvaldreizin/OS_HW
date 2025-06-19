@@ -1,5 +1,8 @@
 #include "customAllocator.h"
 
+heap_t g_heap = NULL; // global heap pointer
+
+
 void* customMalloc(size_t size){
     // if (size == 0) return NULL; // decide if we want to allow 0 size allocations
     if (!g_heap) heapCreate();
@@ -22,7 +25,7 @@ void* customMalloc(size_t size){
         best_match->free = false;  
         return best_match->data; 
     } else {    // no match, create new block
-        block_t alloc_block = (block_t)sbrk(round_size);
+        block_t alloc_block = (block_t)(sbrk(round_size));
         if (alloc_block == SBRK_FAIL && errno == ENOMEM) {
             out_of_memory();
         }
@@ -45,7 +48,52 @@ void* customMalloc(size_t size){
 }
 
 void customFree(void* ptr){
-
+    int result = checkPtr(ptr);
+    if (result == 2){
+        printf("<free error>: passed null pointer\n");
+        return;
+    }
+    if (result == 1) {
+        printf("<free error>: passed non-heap pointer\n");
+        return;
+    }
+    // result == 0, ptr is valid heap pointer
+    block_t block = (block_t)((char*)ptr - OVERHEAD_SIZE);
+    block->free = true;
+    while (block->next != NULL && block->next->free) { // merge with next free block
+        block_t next_block = block->next;
+        block->size += next_block->size + OVERHEAD_SIZE; // add size of next block and overhead
+        block->next = next_block->next;
+        if (next_block->next != NULL) {
+            next_block->next->prev = block; // update prev pointer of next block
+        } else {
+            g_heap->lastBlock = block; // update last block if needed
+        }
+    }
+    while (block->prev != NULL && block->prev->free) { // merge with previous free block
+        block_t prev_block = block->prev;
+        prev_block->size += block->size + OVERHEAD_SIZE; // add size of current block and overhead
+        prev_block->next = block->next;
+        if (block->next != NULL) {
+            block->next->prev = prev_block; // update prev pointer of next block
+        } else {
+            g_heap->lastBlock = prev_block; // update last block if needed
+        }
+        block = prev_block; // move to previous block
+    }
+    if (block == g_heap->lastBlock) { // if last block was freed, remove it from heap
+        g_heap->lastBlock = block->prev;
+        if (g_heap->lastBlock == NULL) {
+            g_heap->firstBlock = NULL; // if no blocks left, set first block to NULL
+        } else {
+            g_heap->lastBlock->next = NULL; // update next pointer of last block
+        }
+        // free the last block memory
+        if (brk(block) == -1 && errno == ENOMEM) {
+            out_of_memory();
+        }
+    }
+    return;
 }
 
 void* customCalloc(size_t nmemb, size_t size){

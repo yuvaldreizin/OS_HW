@@ -3,8 +3,11 @@
 
 #include <unistd.h> 
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/mman.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <stdlib.h>
 
 /*=============================================================================
 * Do no edit lines below!
@@ -47,10 +50,9 @@ void heapKill();
 /*=============================================================================
 * Block
 =============================================================================*/
-// Suggestion for block usage - feel free to change this
 struct Block {
-    block_t next;
-    block_t prev;
+    struct Block* next;
+    struct Block* prev;
     // block_t nextFree;
     void* data; 
     size_t size;
@@ -65,9 +67,7 @@ struct Heap {
 };
 typedef struct Heap* heap_t;
 
-heap_t g_heap;
-
-block_t checkPtr(void* ptr);
+int checkPtr(void* ptr);
 void out_of_memory();
 
 #endif // CUSTOM_ALLOCATOR

@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "testFunc.h"
+#include "customAllocator.h"
 
 /* ─── allocator API (forward declarations only) ─────────────── */
 void *customMalloc (size_t size);
@@ -38,6 +39,38 @@ static void verify_pattern(const void *mem, size_t len, unsigned char pat)
                     i, pat, p[i]);
             abort();
         }
+}
+
+// Forward declaration of block_t and g_heap for printing
+typedef struct Block* block_t;
+typedef struct Heap* heap_t;
+extern heap_t g_heap;
+
+void print_heap_blocks(const char* msg) {
+    printf("=== Heap Blocks: %s ===\n", msg ? msg : "");
+    if (!g_heap) {
+        printf("Heap not initialized.\n");
+        return;
+    }
+    block_t block = g_heap->firstBlock;
+    int idx = 0;
+    while (block) {
+        printf("  Block %d: addr=%p, size=%zu, free=%s, data=%p, prev=%p, next=%p\n",
+            idx,
+            (void*)block,
+            block->size,
+            block->free ? "yes" : "no",
+            block->data,
+            (void*)block->prev,
+            (void*)block->next
+        );
+        block = block->next;
+        idx++;
+    }
+    if (idx == 0) {
+        printf("  (no blocks in heap)\n");
+    }
+    printf("============================\n");
 }
 
 int main(void)
@@ -106,6 +139,8 @@ int main(void)
         strcpy(p, "Hi");
         char *q = (char *)customRealloc(p, 32);
         assert(q && strcmp(q, "Hi") == 0);
+        printf("here\n");
+
         memset(q + 2, 'X', 30);
         customFree(q);
         puts("      ✔");
