@@ -43,23 +43,25 @@ void heapKill()
 =============================================================================*/
 #define SBRK_FAIL (void*)(-1)
 #define ALIGN_TO_MULT_OF_4(x) (((((x) - 1) >> 2) << 2) + 4)
+#define OVERHEAD_SIZE sizeof(struct Block)
 
 /*=============================================================================
 * Block
 =============================================================================*/
 // Suggestion for block usage - feel free to change this
 struct Block {
-    size_t size;
-    bool free;
     block_t next;
     block_t prev;
-    block_t nextFree;
+    // block_t nextFree;
+    bool free;
+    size_t size;
     void* data; 
 };
 typedef struct Block* block_t;
 
 struct Heap {
     block_t firstBlock;
+    block_t lastBlock;
     // size_t totalSize;
 };
 typedef struct Heap* heap_t;
