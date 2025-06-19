@@ -1,6 +1,10 @@
 #ifndef CUSTOM_ALLOCATOR
 #define CUSTOM_ALLOCATOR
 
+#include <unistd.h> 
+#include <stdio.h>
+#include <stdbool.h>
+
 /*=============================================================================
 * Do no edit lines below!
 =============================================================================*/
@@ -17,10 +21,15 @@ void* customRealloc(void* ptr, size_t size);
 // Heap creation and destruction functions - 
 void heapCreate()
 {
+    g_heap = (heap_t)sbrk(sizeof(struct Heap));
+    g_heap->firstBlock = NULL;
+    g_heap->lastBlock = NULL;
     return;
 }
 void heapKill()
 {
+    brk(g_heap);
+    g_heap = NULL;
     return;
 }
 
@@ -65,6 +74,8 @@ struct Heap {
     // size_t totalSize;
 };
 typedef struct Heap* heap_t;
+
+heap_t g_heap;
 
 void add_block(heap_t heap, block_t block);
 void remove_block(heap_t heap, block_t block);
