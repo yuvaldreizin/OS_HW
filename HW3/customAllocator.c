@@ -28,7 +28,7 @@ void* customMalloc(size_t size){
         }
         alloc_block->next = NULL;
         alloc_block->free = false;
-        alloc_block->size = round_size;
+        alloc_block->size = round_size - OVERHEAD_SIZE; // size without overhead
         if (g_heap->firstBlock != NULL) // if there are existing blocks
         {
             g_heap->lastBlock->next = alloc_block;
@@ -129,17 +129,17 @@ void* customRealloc(void* ptr, size_t size){
     size_t old_size = block->size;
     if (size < old_size){
         size_t size_diff = old_size - size;
-        if (size_diff >= OVERHEAD_SIZE) { // can shrink
-            block_t new_block = (block_t)((char*)block + size);
+        if (size_diff > OVERHEAD_SIZE) { // can shrink
+            block_t new_block = (block_t)((char*)block + OVERHEAD_SIZE + size);
             new_block->next = block->next;
             new_block->prev = block;
             new_block->free = true;
             new_block->size = size_diff - OVERHEAD_SIZE; 
-            if (new_block->size == 0 ) { 
-                new_block->data = NULL; // won't be useful, will be dealt in free
-            } else {
-                new_block->data = (void*)((char*)new_block + OVERHEAD_SIZE);
-            }
+            // if (new_block->size == 0 ) {
+            //     new_block->data = NULL; // won't be useful, will be dealt in free
+            // } else {
+            new_block->data = (void*)((char*)new_block + OVERHEAD_SIZE);
+            // }
 
             block->size = size;
             block->next = new_block;
@@ -222,6 +222,10 @@ void print_heap_blocks(const char* msg) {
     }
     if (idx == 0) {
         printf("  (no blocks in heap)\n");
+    }
+    else {
+        printf("  first block: %p\n", (void*)g_heap->firstBlock);
+        printf("  last block: %p\n", (void*)g_heap->lastBlock);
     }
     printf("============================\n");
 }
