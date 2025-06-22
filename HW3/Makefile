@@ -1,6 +1,6 @@
 CC = gcc
-# CFLAGS = -g -Wall -Werror -pedantic-errors -pthread -DNDEBUG
-CFLAGS = -std=c99 -g -Wall -Werror -pedantic-errors -pthread -DNDEBUG
+CFLAGS = -g -Wall -Werror -pedantic-errors -pthread -DNDEBUG
+# CFLAGS = -std=c99 -g -Wall -Werror -pedantic-errors -pthread -DNDEBUG
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 TARGET = bank

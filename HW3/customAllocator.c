@@ -12,15 +12,12 @@ void* customMalloc(size_t size){
     // find best match from existing blocks
     while (block != NULL){
         if (block->free && block->size >= round_size) {
-            if (best_match != NULL || block->size < best_match->size) {
-                best_match = block;
-            } else if (best_match == NULL) {
+            if (best_match == NULL || block->size < best_match->size) {
                 best_match = block;
             }
         }
         block = block->next;
     }
-    
     if (best_match != NULL) {   // found match
         best_match->free = false;  
         return best_match->data; 
@@ -30,19 +27,31 @@ void* customMalloc(size_t size){
             out_of_memory();
         }
         alloc_block->next = NULL;
-        alloc_block->prev = g_heap->lastBlock;
         alloc_block->free = false;
         alloc_block->size = round_size;
+        if (g_heap->firstBlock != NULL) // if there are existing blocks
+        {
+            g_heap->lastBlock->next = alloc_block;
+            alloc_block->prev = g_heap->lastBlock;
+            g_heap->lastBlock = alloc_block;
+        }
+        else // if no existing blocks, set first and last to the new block
+        {
+            g_heap->firstBlock = alloc_block;
+            g_heap->lastBlock = alloc_block;
+            alloc_block->prev = NULL;
+            alloc_block->next = NULL;
+        }
         if (size == 0 ) { 
             alloc_block->data = NULL; // won't be useful, will be dealt in free
         } else {
             alloc_block->data = (void*)((char*)alloc_block + OVERHEAD_SIZE);
         }
         
-        g_heap->lastBlock = alloc_block;
-        if (g_heap->firstBlock == NULL) {
-            g_heap->firstBlock = alloc_block;
-        }
+        // g_heap->lastBlock = alloc_block;
+        // if (g_heap->firstBlock == NULL) {
+        //     g_heap->firstBlock = alloc_block;
+        // }
         return alloc_block->data;
     }
 }
@@ -186,4 +195,33 @@ void heapKill()
     brk(g_heap);    // releasing memory so no out-of-memory possible
     g_heap = NULL;
     return;
+}
+
+// for debug
+
+void print_heap_blocks(const char* msg) {
+    printf("=== Heap Blocks: %s ===\n", msg ? msg : "");
+    if (!g_heap) {
+        printf("Heap not initialized.\n");
+        return;
+    }
+    block_t block = g_heap->firstBlock;
+    int idx = 0;
+    while (block) {
+        printf("  Block %d: addr=%p, size=%zu, free=%s, data=%p, prev=%p, next=%p\n",
+            idx,
+            (void*)block,
+            block->size,
+            block->free ? "yes" : "no",
+            block->data,
+            (void*)block->prev,
+            (void*)block->next
+        );
+        block = block->next;
+        idx++;
+    }
+    if (idx == 0) {
+        printf("  (no blocks in heap)\n");
+    }
+    printf("============================\n");
 }

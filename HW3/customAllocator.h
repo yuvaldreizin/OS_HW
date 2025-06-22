@@ -70,4 +70,6 @@ typedef struct Heap* heap_t;
 int checkPtr(void* ptr);
 void out_of_memory();
 
+void print_heap_blocks(const char* msg);
+
 #endif // CUSTOM_ALLOCATOR
